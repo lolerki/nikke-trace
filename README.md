@@ -6,7 +6,7 @@ NikkeTrace is a community tool for Windows 10/11 with Windows PowerShell 5.1. Th
 
 ## Run
 
-1. Download `nikke-trace-v2.6.zip` from the [latest release](https://github.com/lolerki/nikke-trace/releases/latest).
+1. Download `nikke-trace-v2.7.zip` from the [latest release](https://github.com/lolerki/nikke-trace/releases/latest).
 2. Extract the ZIP, then double-click `NikkeTrace.cmd` on your Windows PC.
 3. Press Enter for English, or choose `2` for French.
 4. Choose a check from the menu. Checks still work if the game or launcher has already been removed.
@@ -23,7 +23,27 @@ Run it as your usual Windows user. Administrator access is requested only if you
 - Offers recoverable removal of a verified NIKKE installation folder by renaming it. This is not a complete Windows uninstall or a promise to remove every residual file.
 - Provides password and offline antivirus guidance. It does not start an antivirus scan or reboot the PC.
 
+Launcher cache checks cover the standard, HMT and Google Play Games variants. They inspect selected JavaScript caches, local network-state files, known HSTS domain hashes, and LevelDB storage, including Snappy-compressed tables and shared keys. Reads, decompression and traversal have size limits; unreadable, unsupported or malformed files are recorded as incomplete checks.
+
+The launcher's shared CEF sign-in profile is checked for the same indicators. Browser credential databases are not inspected. A domain reference is reported as a historical trace, not as proof that the malware agent executed.
+
 Uncertain files and registry entries are left in place. Automatic DLL quarantine is restricted to the recognized Chrome path; a helper folder or filename alone does not authorize deletion. The legitimate Windows HKLM CLSID is not removed.
+
+## Optional NIKKE launcher cache deletion
+
+Menu option `7` is separate from targeted file quarantine. It checks the caches again and saves a report **before asking for confirmation**. If saving fails, nothing is deleted.
+
+After you agree, the game and launcher must be closed. Only these folders under the current Windows user's `%APPDATA%` can be deleted:
+
+```text
+nikke_launcher\tbs_cache
+nikke_launcher_hmt\tbs_cache
+nikke_launcher_google\tbs_cache
+```
+
+Deletion is permanent. It may sign you out of the launcher and reset its settings; the launcher normally recreates its cache. The report preserves detected indicators, not a backup of the cache contents. Do not restart a suspect launcher just to regenerate the cache.
+
+The shared `%LOCALAPPDATA%\CEF\User Data` folder, browser profiles, other application folders and game installation are excluded from this option. Redirected paths, junctions and symbolic links are rejected. After deletion, the tool checks again and reports remaining traces or incomplete checks; retained CEF traces remain visible for review.
 
 ## Optional domain blocking
 
@@ -57,6 +77,8 @@ This is a targeted incident checker, not an antivirus or an official SHIFT UP/Le
 
 `NikkeTrace.ps1` is the readable source. `NikkeTrace.cmd` contains that same source and temporarily extracts it to run with Windows PowerShell. The temporary script is removed on exit; no permanent execution policy change is made.
 
+The cache reader and guarded deletion helper are embedded C# compiled locally by Windows PowerShell. No external library is downloaded. If local policy prevents compilation, the cache check cannot complete and cache deletion is not confirmed.
+
 To rebuild the single-file launcher and player ZIP with Python 3:
 
 ```sh
@@ -70,6 +92,7 @@ Run the regression checks on Windows without administrator privileges:
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Test-Source.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Test-Hosts.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\Test-Cache.ps1
 ```
 
 Tests use temporary fixtures and mocked operations. They do not edit the system hosts file, request UAC, launch an antivirus or close real browsers.

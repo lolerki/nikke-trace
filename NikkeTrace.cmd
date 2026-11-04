@@ -40,6 +40,20 @@ $script:TranslationCache = @{}
 $script:UiCatalog = @'
 [
     {
+        "French": "Marqueur de cache : {0} — {1}",
+        "Pattern": "^Marqueur\\ de\\ cache\\ :\\ (?<v0>.*?)\\ —\\ (?<v1>.*?)$",
+        "English": "Cache marker: {0} — {1}",
+        "Count": 2,
+        "Weight": 29
+    },
+    {
+        "French": "Consultez le rapport pour le détail ; aucun retrait non confirmé ne sera annoncé comme réussi.",
+        "Pattern": "^Consultez\\ le\\ rapport\\ pour\\ le\\ détail\\ ;\\ aucun\\ retrait\\ non\\ confirmé\\ ne\\ sera\\ annoncé\\ comme\\ réussi\\.$",
+        "English": "See the report for details; an unconfirmed removal will never be reported as successful.",
+        "Count": 0,
+        "Weight": 94
+    },
+    {
         "French": "Journaux : profondeur 8 niveaux ; navigateurs : 65 niveaux ; limite de 12000 dossiers par racine, caches exclus et liens/jonctions ignorés.",
         "Pattern": "^Journaux\\ :\\ profondeur\\ 8\\ niveaux\\ ;\\ navigateurs\\ :\\ 65\\ niveaux\\ ;\\ limite\\ de\\ 12000\\ dossiers\\ par\\ racine,\\ caches\\ exclus\\ et\\ liens/jonctions\\ ignorés\\.$",
         "English": "Logs: depth 8; browsers: depth 65; limit of 12000 folders per root, excluding caches and skipping links/junctions.",
@@ -341,6 +355,13 @@ $script:UiCatalog = @'
         "Weight": 108
     },
     {
+        "French": "Les caches NIKKE et le profil CEF sont vérifiés même sans le jeu : stockage local, scripts et traces réseau.",
+        "Pattern": "^Les\\ caches\\ NIKKE\\ et\\ le\\ profil\\ CEF\\ sont\\ vérifiés\\ même\\ sans\\ le\\ jeu\\ :\\ stockage\\ local,\\ scripts\\ et\\ traces\\ réseau\\.$",
+        "English": "NIKKE launcher caches and the CEF profile are checked even without the game: local storage, scripts and network traces.",
+        "Count": 0,
+        "Weight": 108
+    },
+    {
         "French": "Commencez par la messagerie et le gestionnaire de mots de passe, puis comptes importants, Discord et NIKKE.",
         "Pattern": "^Commencez\\ par\\ la\\ messagerie\\ et\\ le\\ gestionnaire\\ de\\ mots\\ de\\ passe,\\ puis\\ comptes\\ importants,\\ Discord\\ et\\ NIKKE\\.$",
         "English": "Start with email and your password manager, then important accounts, Discord and NIKKE.",
@@ -505,6 +526,13 @@ $script:UiCatalog = @'
         "French": "  Une exposition passée a été relevée précédemment : le changement des mots de passe reste nécessaire.",
         "Pattern": "^\\ \\ Une\\ exposition\\ passée\\ a\\ été\\ relevée\\ précédemment\\ :\\ le\\ changement\\ des\\ mots\\ de\\ passe\\ reste\\ nécessaire\\.$",
         "English": "  Past exposure was found earlier: changing affected passwords remains necessary.",
+        "Count": 0,
+        "Weight": 102
+    },
+    {
+        "French": "Suppression définitive : vous pourrez être déconnecté du lanceur et ses réglages seront réinitialisés.",
+        "Pattern": "^Suppression\\ définitive\\ :\\ vous\\ pourrez\\ être\\ déconnecté\\ du\\ lanceur\\ et\\ ses\\ réglages\\ seront\\ réinitialisés\\.$",
+        "English": "Permanent deletion: you may be signed out of the launcher and its settings will be reset.",
         "Count": 0,
         "Weight": 102
     },
@@ -894,6 +922,13 @@ $script:UiCatalog = @'
         "Weight": 84
     },
     {
+        "French": "Fermez NIKKE et son lanceur, puis réessayez. Aucun programme ne sera fermé de force.",
+        "Pattern": "^Fermez\\ NIKKE\\ et\\ son\\ lanceur,\\ puis\\ réessayez\\.\\ Aucun\\ programme\\ ne\\ sera\\ fermé\\ de\\ force\\.$",
+        "English": "Close NIKKE and its launcher, then try again. No program will be forcibly closed.",
+        "Count": 0,
+        "Weight": 84
+    },
+    {
         "French": "Les règles ont été relues dans le fichier. Cela ne certifie pas que le PC est sain.",
         "Pattern": "^Les\\ règles\\ ont\\ été\\ relues\\ dans\\ le\\ fichier\\.\\ Cela\\ ne\\ certifie\\ pas\\ que\\ le\\ PC\\ est\\ sain\\.$",
         "English": "The rules were verified by reading the file. This does not certify that the PC is clean.",
@@ -943,6 +978,13 @@ $script:UiCatalog = @'
         "Weight": 81
     },
     {
+        "French": "Vérification du cache incomplète : aucun nettoyage global ne peut être confirmé.",
+        "Pattern": "^Vérification\\ du\\ cache\\ incomplète\\ :\\ aucun\\ nettoyage\\ global\\ ne\\ peut\\ être\\ confirmé\\.$",
+        "English": "Cache check incomplete: overall cleanup cannot be confirmed.",
+        "Count": 0,
+        "Weight": 80
+    },
+    {
         "French": "Depuis un téléphone ou autre appareil sain, sans attendre la fin des analyses :",
         "Pattern": "^Depuis\\ un\\ téléphone\\ ou\\ autre\\ appareil\\ sain,\\ sans\\ attendre\\ la\\ fin\\ des\\ analyses\\ :$",
         "English": "From a phone or another clean device, without waiting for scans to finish:",
@@ -960,6 +1002,13 @@ $script:UiCatalog = @'
         "French": "Windows demandera les droits administrateur si nécessaire, après votre accord.",
         "Pattern": "^Windows\\ demandera\\ les\\ droits\\ administrateur\\ si\\ nécessaire,\\ après\\ votre\\ accord\\.$",
         "English": "Windows will request administrator rights if needed, after you agree.",
+        "Count": 0,
+        "Weight": 78
+    },
+    {
+        "French": "Le rapport conserve les traces détectées, pas une copie des fichiers du cache.",
+        "Pattern": "^Le\\ rapport\\ conserve\\ les\\ traces\\ détectées,\\ pas\\ une\\ copie\\ des\\ fichiers\\ du\\ cache\\.$",
+        "English": "The report preserves the detected indicators, not a copy of the cache files.",
         "Count": 0,
         "Weight": 78
     },
@@ -1188,9 +1237,23 @@ $script:UiCatalog = @'
         "Weight": 70
     },
     {
+        "French": "Le profil CEF partagé et les profils des navigateurs seront conservés.",
+        "Pattern": "^Le\\ profil\\ CEF\\ partagé\\ et\\ les\\ profils\\ des\\ navigateurs\\ seront\\ conservés\\.$",
+        "English": "The shared CEF profile and browser profiles will be preserved.",
+        "Count": 0,
+        "Weight": 70
+    },
+    {
         "French": "Cet outil ne lance aucun antivirus et ne déclenche aucun redémarrage.",
         "Pattern": "^Cet\\ outil\\ ne\\ lance\\ aucun\\ antivirus\\ et\\ ne\\ déclenche\\ aucun\\ redémarrage\\.$",
         "English": "This tool starts no antivirus scan and triggers no restart.",
+        "Count": 0,
+        "Weight": 69
+    },
+    {
+        "French": "7  Supprimer le cache NIKKE (facultatif, après sauvegarde du rapport)",
+        "Pattern": "^7\\ \\ Supprimer\\ le\\ cache\\ NIKKE\\ \\(facultatif,\\ après\\ sauvegarde\\ du\\ rapport\\)$",
+        "English": "7  Delete NIKKE launcher cache (optional, after saving the report)",
         "Count": 0,
         "Weight": 69
     },
@@ -1363,6 +1426,13 @@ $script:UiCatalog = @'
         "Weight": 63
     },
     {
+        "French": "Cache non supprimé : son emplacement ne peut pas être confirmé.",
+        "Pattern": "^Cache\\ non\\ supprimé\\ :\\ son\\ emplacement\\ ne\\ peut\\ pas\\ être\\ confirmé\\.$",
+        "English": "Cache not deleted: its location could not be confirmed.",
+        "Count": 0,
+        "Weight": 63
+    },
+    {
         "French": "  Journaux NIKKE : lecture incomplète — impossible de conclure",
         "Pattern": "^\\ \\ Journaux\\ NIKKE\\ :\\ lecture\\ incomplète\\ —\\ impossible\\ de\\ conclure$",
         "English": "  NIKKE logs: incomplete read — unable to conclude",
@@ -1496,6 +1566,13 @@ $script:UiCatalog = @'
         "Weight": 58
     },
     {
+        "French": "Rapport sauvegardé hors du cache requis avant suppression.",
+        "Pattern": "^Rapport\\ sauvegardé\\ hors\\ du\\ cache\\ requis\\ avant\\ suppression\\.$",
+        "English": "A report saved outside the cache is required before deletion.",
+        "Count": 0,
+        "Weight": 58
+    },
+    {
         "French": "---------------- QUE VOULEZ-VOUS FAIRE ? ----------------",
         "Pattern": "^\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\ QUE\\ VOULEZ\\-VOUS\\ FAIRE\\ \\?\\ \\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-\\-$",
         "English": "---------------- WHAT WOULD YOU LIKE TO DO? ----------------",
@@ -1527,6 +1604,13 @@ $script:UiCatalog = @'
         "French": "Fichier hosts non vérifiable dans les limites de lecture.",
         "Pattern": "^Fichier\\ hosts\\ non\\ vérifiable\\ dans\\ les\\ limites\\ de\\ lecture\\.$",
         "English": "Hosts file cannot be checked within the reading limits.",
+        "Count": 0,
+        "Weight": 57
+    },
+    {
+        "French": "Ce dossier ne fait pas partie des caches NIKKE autorisés.",
+        "Pattern": "^Ce\\ dossier\\ ne\\ fait\\ pas\\ partie\\ des\\ caches\\ NIKKE\\ autorisés\\.$",
+        "English": "This folder is not an allowed NIKKE launcher cache.",
         "Count": 0,
         "Weight": 57
     },
@@ -1601,6 +1685,13 @@ $script:UiCatalog = @'
         "Weight": 55
     },
     {
+        "French": "TRACES ENCORE PRÉSENTES OU À EXAMINER DANS LES CACHES :",
+        "Pattern": "^TRACES\\ ENCORE\\ PRÉSENTES\\ OU\\ À\\ EXAMINER\\ DANS\\ LES\\ CACHES\\ :$",
+        "English": "TRACES STILL PRESENT OR NEEDING REVIEW IN THE CACHES:",
+        "Count": 0,
+        "Weight": 55
+    },
+    {
         "French": "Historique NIKKE : inconnu — aucun journal exploitable",
         "Pattern": "^Historique\\ NIKKE\\ :\\ inconnu\\ —\\ aucun\\ journal\\ exploitable$",
         "English": "NIKKE history: unknown — no usable log",
@@ -1632,6 +1723,27 @@ $script:UiCatalog = @'
         "French": "Avant une vérification : fermez NIKKE et son launcher.",
         "Pattern": "^Avant\\ une\\ vérification\\ :\\ fermez\\ NIKKE\\ et\\ son\\ launcher\\.$",
         "English": "Before a check: close NIKKE and its launcher.",
+        "Count": 0,
+        "Weight": 54
+    },
+    {
+        "French": "Rapport non sauvegardé : aucun cache ne sera supprimé.",
+        "Pattern": "^Rapport\\ non\\ sauvegardé\\ :\\ aucun\\ cache\\ ne\\ sera\\ supprimé\\.$",
+        "English": "Report not saved: no cache will be deleted.",
+        "Count": 0,
+        "Weight": 54
+    },
+    {
+        "French": "Suppression du cache refusée : aucun fichier supprimé.",
+        "Pattern": "^Suppression\\ du\\ cache\\ refusée\\ :\\ aucun\\ fichier\\ supprimé\\.$",
+        "English": "Cache deletion declined: no files deleted.",
+        "Count": 0,
+        "Weight": 54
+    },
+    {
+        "French": "Suppression du cache limitée aux disques locaux fixes.",
+        "Pattern": "^Suppression\\ du\\ cache\\ limitée\\ aux\\ disques\\ locaux\\ fixes\\.$",
+        "English": "Cache deletion is restricted to local fixed drives.",
         "Count": 0,
         "Weight": 54
     },
@@ -1688,6 +1800,13 @@ $script:UiCatalog = @'
         "French": "Connexion TCP résiduelle TIME_WAIT vers l IP signalée",
         "Pattern": "^Connexion\\ TCP\\ résiduelle\\ TIME_WAIT\\ vers\\ l\\ IP\\ signalée$",
         "English": "Residual TIME_WAIT TCP connection to the reported IP",
+        "Count": 0,
+        "Weight": 53
+    },
+    {
+        "French": "AUCUNE TRACE CONNUE TROUVÉE DANS LES CACHES VÉRIFIÉS.",
+        "Pattern": "^AUCUNE\\ TRACE\\ CONNUE\\ TROUVÉE\\ DANS\\ LES\\ CACHES\\ VÉRIFIÉS\\.$",
+        "English": "NO KNOWN TRACES FOUND IN THE CHECKED CACHES.",
         "Count": 0,
         "Weight": 53
     },
@@ -1758,6 +1877,13 @@ $script:UiCatalog = @'
         "French": "6  Bloquer les domaines signalés (facultatif, admin)",
         "Pattern": "^6\\ \\ Bloquer\\ les\\ domaines\\ signalés\\ \\(facultatif,\\ admin\\)$",
         "English": "6  Block reported domains (optional, admin)",
+        "Count": 0,
+        "Weight": 52
+    },
+    {
+        "French": "Aucun cache NIKKE trouvé aux emplacements habituels.",
+        "Pattern": "^Aucun\\ cache\\ NIKKE\\ trouvé\\ aux\\ emplacements\\ habituels\\.$",
+        "English": "No NIKKE launcher cache found in the usual locations.",
         "Count": 0,
         "Weight": 52
     },
@@ -1965,6 +2091,20 @@ $script:UiCatalog = @'
         "Weight": 47
     },
     {
+        "French": "CACHE NON SUPPRIMÉ OU SUPPRESSION INCOMPLÈTE : {0}",
+        "Pattern": "^CACHE\\ NON\\ SUPPRIMÉ\\ OU\\ SUPPRESSION\\ INCOMPLÈTE\\ :\\ (?<v0>.*?)$",
+        "English": "CACHE NOT DELETED OR DELETION INCOMPLETE: {0}",
+        "Count": 1,
+        "Weight": 47
+    },
+    {
+        "French": "Cache restant ou recréé pendant la suppression.",
+        "Pattern": "^Cache\\ restant\\ ou\\ recréé\\ pendant\\ la\\ suppression\\.$",
+        "English": "Cache remains or was recreated during deletion.",
+        "Count": 0,
+        "Weight": 47
+    },
+    {
         "French": "3  Voir les conseils pour protéger mes comptes",
         "Pattern": "^3\\ \\ Voir\\ les\\ conseils\\ pour\\ protéger\\ mes\\ comptes$",
         "English": "3  Account protection advice",
@@ -2077,6 +2217,13 @@ $script:UiCatalog = @'
         "Weight": 44
     },
     {
+        "French": "CACHE NIKKE SUPPRIMÉ ET ABSENCE CONFIRMÉE : {0}",
+        "Pattern": "^CACHE\\ NIKKE\\ SUPPRIMÉ\\ ET\\ ABSENCE\\ CONFIRMÉE\\ :\\ (?<v0>.*?)$",
+        "English": "NIKKE LAUNCHER CACHE DELETED AND ABSENCE CONFIRMED: {0}",
+        "Count": 1,
+        "Weight": 44
+    },
+    {
         "French": "    - $($Rows.Count - 3) autre(s) élément(s) dans les détails",
         "Pattern": "^\\ \\ \\ \\ \\-\\ (?<v0>.*?)\\ autre\\(s\\)\\ élément\\(s\\)\\ dans\\ les\\ détails$",
         "English": "    {0} more item(s) in the details",
@@ -2112,6 +2259,13 @@ $script:UiCatalog = @'
         "Weight": 43
     },
     {
+        "French": "Supprimer définitivement ces caches NIKKE ?",
+        "Pattern": "^Supprimer\\ définitivement\\ ces\\ caches\\ NIKKE\\ \\?$",
+        "English": "Permanently delete these NIKKE launcher caches?",
+        "Count": 0,
+        "Weight": 43
+    },
+    {
         "French": "Cache : limite de 512 fichiers atteinte : {0}",
         "Pattern": "^Cache\\ :\\ limite\\ de\\ 512\\ fichiers\\ atteinte\\ :\\ (?<v0>.*?)$",
         "English": "Cache: 512-file limit reached: {0}",
@@ -2129,6 +2283,13 @@ $script:UiCatalog = @'
         "French": "Demander la fermeture de ces navigateurs ?",
         "Pattern": "^Demander\\ la\\ fermeture\\ de\\ ces\\ navigateurs\\ \\?$",
         "English": "Request that these browsers close?",
+        "Count": 0,
+        "Weight": 42
+    },
+    {
+        "French": "Cache NIKKE et profil CEF : traces connues",
+        "Pattern": "^Cache\\ NIKKE\\ et\\ profil\\ CEF\\ :\\ traces\\ connues$",
+        "English": "NIKKE launcher cache and CEF profile: known traces",
         "Count": 0,
         "Weight": 42
     },
@@ -2178,6 +2339,13 @@ $script:UiCatalog = @'
         "French": "BLOCAGE FACULTATIF DES DOMAINES SIGNALÉS",
         "Pattern": "^BLOCAGE\\ FACULTATIF\\ DES\\ DOMAINES\\ SIGNALÉS$",
         "English": "OPTIONAL BLOCKING OF REPORTED DOMAINS",
+        "Count": 0,
+        "Weight": 40
+    },
+    {
+        "French": "Dossier AppData du lanceur indisponible.",
+        "Pattern": "^Dossier\\ AppData\\ du\\ lanceur\\ indisponible\\.$",
+        "English": "The launcher's AppData folder is unavailable.",
         "Count": 0,
         "Weight": 40
     },
@@ -2245,6 +2413,27 @@ $script:UiCatalog = @'
         "Weight": 39
     },
     {
+        "French": "Cache NIKKE proposé à la suppression : {0}",
+        "Pattern": "^Cache\\ NIKKE\\ proposé\\ à\\ la\\ suppression\\ :\\ (?<v0>.*?)$",
+        "English": "NIKKE launcher cache proposed for deletion: {0}",
+        "Count": 1,
+        "Weight": 39
+    },
+    {
+        "French": "Rapport sauvegardé avant suppression : {0}",
+        "Pattern": "^Rapport\\ sauvegardé\\ avant\\ suppression\\ :\\ (?<v0>.*?)$",
+        "English": "Report saved before deletion: {0}",
+        "Count": 1,
+        "Weight": 39
+    },
+    {
+        "French": "Trace signalée dans le cache du lanceur",
+        "Pattern": "^Trace\\ signalée\\ dans\\ le\\ cache\\ du\\ lanceur$",
+        "English": "Reported trace in the launcher cache",
+        "Count": 0,
+        "Weight": 39
+    },
+    {
         "French": "0  Terminer et afficher le bilan final",
         "Pattern": "^0\\ \\ Terminer\\ et\\ afficher\\ le\\ bilan\\ final$",
         "English": "0  Finish and show the final report",
@@ -2262,6 +2451,13 @@ $script:UiCatalog = @'
         "French": "NETTOYAGE CIBLÉ DES TRACES DOCUMENTÉES",
         "Pattern": "^NETTOYAGE\\ CIBLÉ\\ DES\\ TRACES\\ DOCUMENTÉES$",
         "English": "TARGETED CLEANUP OF DOCUMENTED INDICATORS",
+        "Count": 0,
+        "Weight": 38
+    },
+    {
+        "French": "SUPPRESSION FACULTATIVE DU CACHE NIKKE",
+        "Pattern": "^SUPPRESSION\\ FACULTATIVE\\ DU\\ CACHE\\ NIKKE$",
+        "English": "OPTIONAL NIKKE LAUNCHER CACHE DELETION",
         "Count": 0,
         "Weight": 38
     },
@@ -2315,9 +2511,9 @@ $script:UiCatalog = @'
         "Weight": 36
     },
     {
-        "French": "NIKKE assistance 2.6 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
-        "Pattern": "^NIKKE\\ assistance\\ 2\\.6\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
-        "English": "NIKKE assistance 2.6 — {0} — Mode: {1} / {2}",
+        "French": "NIKKE assistance 2.7 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
+        "Pattern": "^NIKKE\\ assistance\\ 2\\.7\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
+        "English": "NIKKE assistance 2.7 — {0} — Mode: {1} / {2}",
         "Count": 3,
         "Weight": 36
     },
@@ -2339,6 +2535,13 @@ $script:UiCatalog = @'
         "French": "Registre HKCU/HKLM, vues 32/64 bits",
         "Pattern": "^Registre\\ HKCU/HKLM,\\ vues\\ 32/64\\ bits$",
         "English": "HKCU/HKLM registry, 32/64-bit views",
+        "Count": 0,
+        "Weight": 35
+    },
+    {
+        "French": "Dossier du profil CEF indisponible.",
+        "Pattern": "^Dossier\\ du\\ profil\\ CEF\\ indisponible\\.$",
+        "English": "The CEF profile location is unavailable.",
         "Count": 0,
         "Weight": 35
     },
@@ -2392,6 +2595,20 @@ $script:UiCatalog = @'
         "Weight": 34
     },
     {
+        "French": "Cache non parcouru complètement : {0}",
+        "Pattern": "^Cache\\ non\\ parcouru\\ complètement\\ :\\ (?<v0>.*?)$",
+        "English": "Cache not fully checked: {0}",
+        "Count": 1,
+        "Weight": 34
+    },
+    {
+        "French": "La sauvegarde du rapport a échoué.",
+        "Pattern": "^La\\ sauvegarde\\ du\\ rapport\\ a\\ échoué\\.$",
+        "English": "Saving the report failed.",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
         "French": "Choisissez un numéro de la liste.",
         "Pattern": "^Choisissez\\ un\\ numéro\\ de\\ la\\ liste\\.$",
         "English": "Choose a number from the menu.",
@@ -2431,6 +2648,13 @@ $script:UiCatalog = @'
         "Pattern": "^Ajouter\\ ce\\ blocage\\ des\\ domaines\\ \\?$",
         "English": "Add this domain block?",
         "Count": 0,
+        "Weight": 33
+    },
+    {
+        "French": "Cache non lisible ou incomplet : {0}",
+        "Pattern": "^Cache\\ non\\ lisible\\ ou\\ incomplet\\ :\\ (?<v0>.*?)$",
+        "English": "Cache unreadable or incomplete: {0}",
+        "Count": 1,
         "Weight": 33
     },
     {
@@ -2497,9 +2721,16 @@ $script:UiCatalog = @'
         "Weight": 31
     },
     {
-        "French": " NikkeTrace — FR — VERSION 2.6",
-        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.6$",
-        "English": " NikkeTrace — EN — VERSION 2.6",
+        "French": "Cache partiellement conservé : {0}",
+        "Pattern": "^Cache\\ partiellement\\ conservé\\ :\\ (?<v0>.*?)$",
+        "English": "Cache partially preserved: {0}",
+        "Count": 1,
+        "Weight": 31
+    },
+    {
+        "French": " NikkeTrace — FR — VERSION 2.7",
+        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.7$",
+        "English": " NikkeTrace — EN — VERSION 2.7",
         "Count": 0,
         "Weight": 30
     },
@@ -2532,9 +2763,16 @@ $script:UiCatalog = @'
         "Weight": 30
     },
     {
-        "French": "NikkeTrace — FR — VERSION 2.6",
-        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.6$",
-        "English": "NikkeTrace — EN — VERSION 2.6",
+        "French": "Cache partiellement vérifié : {0}",
+        "Pattern": "^Cache\\ partiellement\\ vérifié\\ :\\ (?<v0>.*?)$",
+        "English": "Cache partially checked: {0}",
+        "Count": 1,
+        "Weight": 30
+    },
+    {
+        "French": "NikkeTrace — FR — VERSION 2.7",
+        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.7$",
+        "English": "NikkeTrace — EN — VERSION 2.7",
         "Count": 0,
         "Weight": 29
     },
@@ -2599,6 +2837,13 @@ $script:UiCatalog = @'
         "Pattern": "^Échec\\ de\\ l\\ opération\\ hosts\\ :\\ (?<v0>.*?)$",
         "English": "Hosts operation failed: {0}",
         "Count": 1,
+        "Weight": 29
+    },
+    {
+        "French": "Cache après suppression : {0} — {1}",
+        "Pattern": "^Cache\\ après\\ suppression\\ :\\ (?<v0>.*?)\\ —\\ (?<v1>.*?)$",
+        "English": "Cache after deletion: {0} — {1}",
+        "Count": 2,
         "Weight": 29
     },
     {
@@ -2787,6 +3032,13 @@ $script:UiCatalog = @'
         "French": "Processus inexploitable.",
         "Pattern": "^Processus\\ inexploitable\\.$",
         "English": "Unusable process data.",
+        "Count": 0,
+        "Weight": 24
+    },
+    {
+        "French": "Cache NIKKE introuvable.",
+        "Pattern": "^Cache\\ NIKKE\\ introuvable\\.$",
+        "English": "NIKKE launcher cache not found.",
         "Count": 0,
         "Weight": 24
     },
@@ -4098,140 +4350,620 @@ function Get-NikkeResidualPaths {
     }
 }
 
+function Initialize-CacheReader {
+    if ('NikkeTrace.CacheReader27' -as [type]) {
+        return
+    }
+    Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.Win32.SafeHandles;
+
+namespace NikkeTrace {
+    public sealed class CacheEvidence {
+        public string[] Markers;
+        public bool Complete;
+    }
+
+    public static class CacheReader27 {
+        const int Limit = 64 * 1024 * 1024;
+        static readonly string[] AgentMarkers = { "k2f.agent.state", "k2f_chan", "k2f.agent" };
+        static readonly Regex Domains = new Regex(@"(?<![a-z0-9._-])(?:analytics\.insightjs\.com|insightjs\.com|insightjs\.org)(?![a-z0-9._-])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        static readonly uint[] CrcTable = MakeCrcTable();
+
+        static uint[] MakeCrcTable() {
+            uint[] table = new uint[256];
+            for (uint i = 0; i < table.Length; i++) {
+                uint c = i;
+                for (int bit = 0; bit < 8; bit++) c = (c & 1) != 0 ? (c >> 1) ^ 0x82f63b78U : c >> 1;
+                table[i] = c;
+            }
+            return table;
+        }
+
+        static void Find(byte[] bytes, int start, int count, HashSet<string> found) {
+            string text = Encoding.ASCII.GetString(bytes, start, count);
+            foreach (string marker in AgentMarkers) {
+                if (text.IndexOf(marker, StringComparison.Ordinal) >= 0) { found.Add(marker); break; }
+            }
+            foreach (Match match in Domains.Matches(text)) found.Add(match.Value.ToLowerInvariant());
+            // UTF-16 cache records can start at either byte alignment.
+            for (int alignment = 0; alignment < 2; alignment++) {
+                if (count <= alignment) continue;
+                text = Encoding.Unicode.GetString(bytes, start + alignment, (count - alignment) & ~1);
+                foreach (string marker in AgentMarkers) {
+                    if (text.IndexOf(marker, StringComparison.Ordinal) >= 0) { found.Add(marker); break; }
+                }
+                foreach (Match match in Domains.Matches(text)) found.Add(match.Value.ToLowerInvariant());
+            }
+        }
+
+        static ulong Varint(byte[] bytes, ref int position, int end) {
+            ulong result = 0;
+            for (int shift = 0; shift <= 63; shift += 7) {
+                if (position >= end) throw new InvalidDataException("Truncated varint.");
+                byte value = bytes[position++];
+                if (shift == 63 && (value & 254) != 0) throw new InvalidDataException("Varint overflow.");
+                result |= (ulong)(value & 127) << shift;
+                if (value < 128) return result;
+            }
+            throw new InvalidDataException("Invalid varint.");
+        }
+
+        static byte[] Snappy(byte[] bytes, int start, int end, int available) {
+            int position = start;
+            ulong declared = Varint(bytes, ref position, end);
+            if (declared > (ulong)available) throw new InvalidDataException("Expansion limit.");
+            byte[] output = new byte[(int)declared];
+            int written = 0;
+            while (position < end) {
+                int tag = bytes[position++];
+                int kind = tag & 3;
+                ulong length;
+                if (kind == 0) {
+                    length = (ulong)(tag >> 2);
+                    if (length >= 60) {
+                        int width = (int)length - 59;
+                        if (width > end - position) throw new InvalidDataException("Truncated literal length.");
+                        length = 0;
+                        for (int i = 0; i < width; i++) length |= (ulong)bytes[position++] << (8 * i);
+                    }
+                    length++;
+                    if (length > (ulong)(end - position) || length > (ulong)(output.Length - written)) throw new InvalidDataException("Invalid literal.");
+                    Buffer.BlockCopy(bytes, position, output, written, (int)length);
+                    position += (int)length;
+                    written += (int)length;
+                } else {
+                    int width = kind == 1 ? 1 : kind == 2 ? 2 : 4;
+                    if (width > end - position) throw new InvalidDataException("Truncated copy.");
+                    ulong distance = 0;
+                    for (int i = 0; i < width; i++) distance |= (ulong)bytes[position++] << (8 * i);
+                    length = (ulong)(kind == 1 ? ((tag >> 2) & 7) + 4 : (tag >> 2) + 1);
+                    if (kind == 1) distance |= (ulong)(tag >> 5) << 8;
+                    if (distance == 0 || distance > (ulong)written || length > (ulong)(output.Length - written)) throw new InvalidDataException("Invalid copy.");
+                    for (ulong i = 0; i < length; i++) { output[written] = output[written - (int)distance]; written++; }
+                }
+            }
+            if (written != output.Length) throw new InvalidDataException("Incomplete Snappy output.");
+            return output;
+        }
+
+        static byte[] Block(byte[] file, ulong offset, ulong size, ref int available) {
+            if (file.Length < 48 || offset > (ulong)(file.Length - 48) || size > (ulong)(file.Length - 48) - offset || size + 5 > (ulong)(file.Length - 48) - offset) throw new InvalidDataException("Invalid block handle.");
+            int start = (int)offset, end = start + (int)size;
+            uint crc = UInt32.MaxValue;
+            for (int i = start; i <= end; i++) crc = CrcTable[(crc ^ file[i]) & 255] ^ (crc >> 8);
+            crc = ~crc;
+            uint masked = unchecked(((crc >> 15) | (crc << 17)) + 0xa282ead8U);
+            if (BitConverter.ToUInt32(file, end + 1) != masked) throw new InvalidDataException("Block checksum mismatch.");
+            byte[] output;
+            if (file[end] == 0) {
+                if (size > (ulong)available) throw new InvalidDataException("Expansion limit.");
+                output = new byte[(int)size];
+                Buffer.BlockCopy(file, start, output, 0, output.Length);
+            } else if (file[end] == 1) output = Snappy(file, start, end, available);
+            else throw new InvalidDataException("Unsupported table compression.");
+            available -= output.Length;
+            return output;
+        }
+
+        static void Records(byte[] block, Action<byte[], byte[], int, int> visit, ref int available) {
+            if (block.Length < 8) throw new InvalidDataException("Truncated block.");
+            uint restarts = BitConverter.ToUInt32(block, block.Length - 4);
+            if (restarts == 0 || restarts > (block.Length - 4) / 4) throw new InvalidDataException("Invalid restarts.");
+            int end = block.Length - 4 - (int)restarts * 4;
+            uint previous = 0;
+            for (int i = 0; i < restarts; i++) {
+                uint restart = BitConverter.ToUInt32(block, end + i * 4);
+                if ((i == 0 && restart != 0) || restart > end || (i > 0 && restart <= previous)) throw new InvalidDataException("Invalid restart offset.");
+                previous = restart;
+            }
+            int position = 0, records = 0;
+            byte[] key = new byte[0];
+            while (position < end) {
+                if (++records > 100000) throw new InvalidDataException("Record limit.");
+                ulong shared = Varint(block, ref position, end);
+                ulong own = Varint(block, ref position, end);
+                ulong size = Varint(block, ref position, end);
+                if (shared > (ulong)key.Length || own > (ulong)(end - position) || size > (ulong)(end - position) - own || shared + own > 1024 * 1024 || shared + own > (ulong)available) throw new InvalidDataException("Invalid record.");
+                byte[] next = new byte[(int)(shared + own)];
+                Buffer.BlockCopy(key, 0, next, 0, (int)shared);
+                Buffer.BlockCopy(block, position, next, (int)shared, (int)own);
+                available -= next.Length;
+                position += (int)own;
+                key = next;
+                visit(key, block, position, (int)size);
+                position += (int)size;
+            }
+        }
+
+        public static CacheEvidence Inspect(byte[] file, bool table) {
+            HashSet<string> found = new HashSet<string>(StringComparer.Ordinal);
+            bool complete = true;
+            if (file.Length > Limit) throw new InvalidDataException("File size limit.");
+            Find(file, 0, file.Length, found);
+            if (table) {
+                try {
+                    if (file.Length < 48 || BitConverter.ToUInt64(file, file.Length - 8) != 0xdb4775248b80fb57UL) throw new InvalidDataException("Invalid table footer.");
+                    int position = file.Length - 48;
+                    Varint(file, ref position, file.Length - 8);
+                    Varint(file, ref position, file.Length - 8);
+                    ulong indexOffset = Varint(file, ref position, file.Length - 8);
+                    ulong indexSize = Varint(file, ref position, file.Length - 8);
+                    int budget = Limit;
+                    byte[] index = Block(file, indexOffset, indexSize, ref budget);
+                    List<ulong[]> handles = new List<ulong[]>();
+                    Records(index, delegate(byte[] key, byte[] data, int at, int count) {
+                        if (handles.Count >= 8192) throw new InvalidDataException("Block count limit.");
+                        int stop = at + count;
+                        ulong offset = Varint(data, ref at, stop), size = Varint(data, ref at, stop);
+                        if (at != stop) throw new InvalidDataException("Invalid block handle record.");
+                        handles.Add(new ulong[] { offset, size });
+                    }, ref budget);
+                    HashSet<ulong> visited = new HashSet<ulong>();
+                    foreach (ulong[] handle in handles) {
+                        try {
+                            if (!visited.Add(handle[0]) || handle[0] >= indexOffset) throw new InvalidDataException("Repeated or invalid data block.");
+                            byte[] block = Block(file, handle[0], handle[1], ref budget);
+                            Records(block, delegate(byte[] key, byte[] data, int at, int count) { Find(key, 0, key.Length, found); Find(data, at, count, found); }, ref budget);
+                        } catch (InvalidDataException) { complete = false; }
+                    }
+                } catch (InvalidDataException) { complete = false; }
+            }
+            string[] markers = new string[found.Count];
+            found.CopyTo(markers);
+            Array.Sort(markers, StringComparer.Ordinal);
+            return new CacheEvidence { Markers = markers, Complete = complete };
+        }
+    }
+
+    public static class CacheDelete27 {
+        [StructLayout(LayoutKind.Sequential)]
+        struct AttributeTag { public uint Attributes; public uint Tag; }
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint mode, uint flags, IntPtr template);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetFileInformationByHandleEx(SafeFileHandle file, int kind, out AttributeTag data, uint size);
+
+        static SafeFileHandle Hold(string path) {
+            // Excluding share-delete keeps this directory from being replaced while its children are examined.
+            SafeFileHandle handle = CreateFile(path, 0x80, 3, IntPtr.Zero, 3, 0x02200000, IntPtr.Zero);
+            if (handle.IsInvalid) { handle.Dispose(); throw new Win32Exception(Marshal.GetLastWin32Error()); }
+            AttributeTag info;
+            if (!GetFileInformationByHandleEx(handle, 9, out info, 8) || (info.Attributes & 0x400) != 0 || (info.Attributes & 0x10) == 0) {
+                handle.Dispose();
+                throw new IOException("Unsafe or unreadable cache directory.");
+            }
+            return handle;
+        }
+
+        static void Walk(string path, bool delete, int depth, ref int count) {
+            if (depth > 64 || ++count > 50000) throw new IOException("Cache traversal limit.");
+            using (SafeFileHandle held = Hold(path)) {
+                foreach (string child in Directory.EnumerateFileSystemEntries(path)) {
+                    FileAttributes attributes = File.GetAttributes(child);
+                    if ((attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Cache contains a redirected file or directory.");
+                    if ((attributes & FileAttributes.Directory) != 0) Walk(child, delete, depth + 1, ref count);
+                    else {
+                        if (++count > 50000) throw new IOException("Cache traversal limit.");
+                        if (delete) File.Delete(child);
+                    }
+                }
+            }
+            // This is never recursive; a newly substituted link cannot cause traversal outside the cache.
+            if (delete) Directory.Delete(path, false);
+        }
+
+        public static void Run(string root, bool delete) {
+            root = Path.GetFullPath(root);
+            List<SafeFileHandle> ancestors = new List<SafeFileHandle>();
+            try {
+                string parent = Path.GetDirectoryName(root);
+                List<string> paths = new List<string>();
+                while (!String.IsNullOrEmpty(parent)) { paths.Add(parent); parent = Path.GetDirectoryName(parent); }
+                paths.Reverse();
+                foreach (string path in paths) ancestors.Add(Hold(path));
+                int count = 0;
+                Walk(root, delete, 0, ref count);
+            } finally {
+                for (int i = ancestors.Count - 1; i >= 0; i--) ancestors[i].Dispose();
+            }
+        }
+    }
+}
+
+'@ -ErrorAction Stop
+}
+
 function Get-LauncherCacheRoots {
-    foreach ($name in @('nikke_launcher', 'nikke_launcher_hmt')) {
+    if (-not $env:APPDATA) {
+        throw 'Dossier AppData du lanceur indisponible.'
+    }
+    foreach ($name in @('nikke_launcher', 'nikke_launcher_hmt', 'nikke_launcher_google')) {
         Join-Path $env:APPDATA "$name\tbs_cache"
     }
 }
 
-function Find-AgentStateMarker([string]$Path, [long]$MaxBytes = 64MB) {
-    # Decode bounded chunks only to locate a fixed marker. Never return state values.
-    $stream = $null
-    $limit = [Math]::Min(64MB, $MaxBytes)
-    try {
-        Assert-NoReparsePoint $Path
-        $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
-        if ($stream.Length -gt $limit) {
-            Add-Issue "Cache volumineux : lecture limitée : $Path"
+function Get-CacheLocations {
+    foreach ($root in @(Get-LauncherCacheRoots)) {
+        [pscustomobject]@{
+            Path = $root
+            Shared = $false
         }
-        $needles = @('k2f.agent.state', [Text.Encoding]::ASCII.GetString([Text.Encoding]::Unicode.GetBytes('k2f.agent.state')))
-        $buffer = New-Object byte[] 65536
-        $tail = New-Object byte[] 0
-        [long]$position = 0
-        while ($position -lt $limit) {
-            $read = $stream.Read($buffer, 0, [int][Math]::Min($buffer.Length, ($limit - $position)))
-            if ($read -eq 0) {
-                break
+    }
+    if ($env:LOCALAPPDATA) {
+        [pscustomobject]@{
+            Path = (Join-Path $env:LOCALAPPDATA 'CEF\User Data')
+            Shared = $true
+        }
+    } else {
+        Add-Issue 'Dossier du profil CEF indisponible.'
+    }
+}
+
+function Get-CacheFiles([string]$Root) {
+    Assert-NoReparsePoint $Root
+    $cacheProfiles = @($Root)
+    $cacheProfiles += @(Get-ChildItem -LiteralPath $Root -Directory -Force -ErrorAction Stop |
+        Where-Object {
+            $_.Name -match '^(Default|Profile \d+)$'
+        } | ForEach-Object {
+            Assert-NoReparsePoint $_.FullName
+            $_.FullName
+        })
+    foreach ($cacheProfile in $cacheProfiles) {
+        $db = Join-Path $cacheProfile 'Local Storage\leveldb'
+        if ($null -ne (Get-LocalItem $db)) {
+            Assert-NoReparsePoint $db
+            Get-ChildItem -LiteralPath $db -File -Force -ErrorAction Stop | Where-Object {
+                $_.Extension -in @('.log', '.ldb', '.sst')
             }
-            $chunk = New-Object byte[] ($tail.Length + $read)
-            [Array]::Copy($tail, 0, $chunk, 0, $tail.Length)
-            [Array]::Copy($buffer, 0, $chunk, $tail.Length, $read)
-            $text = [Text.Encoding]::ASCII.GetString($chunk)
-            for ($i = 0; $i -lt $needles.Count; $i++) {
-                $index = $text.IndexOf($needles[$i], [StringComparison]::Ordinal)
-                if ($index -ge 0) {
-                    return [pscustomobject]@{
-                        Offset = $position - $tail.Length + $index
-                        Encoding = @('ASCII', 'UTF-16LE')[$i]
-                    }
+        }
+        foreach ($name in @('Code Cache', 'Cache')) {
+            $path = Join-Path $cacheProfile $name
+            if ($null -ne (Get-LocalItem $path)) {
+                Assert-NoReparsePoint $path
+                Find-IndicatorFiles $path '*' -MaxDepth 5
+            }
+        }
+        foreach ($folder in @($cacheProfile, (Join-Path $cacheProfile 'Network'))) {
+            foreach ($name in @('TransportSecurity', 'Network Persistent State', 'Reporting and NEL')) {
+                $item = Get-LocalItem (Join-Path $folder $name)
+                if ($null -ne $item) {
+                    $item
                 }
             }
-            $position += $read
-            $keep = [Math]::Min(27, $chunk.Length)
-            $tail = New-Object byte[] $keep
-            [Array]::Copy($chunk, ($chunk.Length - $keep), $tail, 0, $keep)
         }
-    } catch {
-        Add-Issue "Cache non lisible : $Path"
+    }
+}
+
+function Get-HstsKey([string]$Domain) {
+    $wire = New-Object 'System.Collections.Generic.List[byte]'
+    foreach ($label in $Domain.Split('.')) {
+        $wire.Add([byte]$label.Length)
+        $wire.AddRange([Text.Encoding]::ASCII.GetBytes($label))
+    }
+    $wire.Add(0)
+    $hash = [Security.Cryptography.SHA256]::Create()
+    try {
+        [Convert]::ToBase64String($hash.ComputeHash($wire.ToArray()))
     }
     finally {
-        if ($null -ne $stream) {
-            $stream.Dispose()
+        $hash.Dispose()
+    }
+}
+
+function Read-CacheEvidence([string]$Path, [long]$Budget = 64MB) {
+    Initialize-CacheReader
+    Assert-NoReparsePoint $Path
+    $stream = [IO.File]::Open($Path, 'Open', 'Read', 'ReadWrite, Delete')
+    try {
+        if ($stream.Length -gt [Math]::Min(64MB, $Budget)) {
+            throw 'Limite de lecture du cache atteinte.'
         }
+        $bytes = New-Object byte[] ([int]$stream.Length)
+        $offset = 0
+        while ($offset -lt $bytes.Length) {
+            $count = $stream.Read($bytes, $offset, $bytes.Length - $offset)
+            if ($count -eq 0) {
+                throw 'Lecture de cache incomplète.'
+            }
+            $offset += $count
+        }
+        $result = [NikkeTrace.CacheReader27]::Inspect($bytes, ([IO.Path]::GetExtension($Path) -in @('.ldb', '.sst')))
+        if ($stream.Length -ne $bytes.Length) {
+            $result.Complete = $false
+        }
+        $markers = @($result.Markers)
+        if ([IO.Path]::GetFileName($Path) -eq 'TransportSecurity') {
+            if ($bytes.Length -gt 4MB) {
+                throw 'Fichier HSTS trop volumineux.'
+            }
+            $json = [Text.Encoding]::UTF8.GetString($bytes).TrimStart([char]0xFEFF) | ConvertFrom-Json -ErrorAction Stop
+            foreach ($domain in @('insightjs.com', 'analytics.insightjs.com', 'insightjs.org')) {
+                $key = Get-HstsKey $domain
+                $present = $null -ne $json.PSObject.Properties[$key]
+                if ($null -ne $json.PSObject.Properties['sts']) {
+                    foreach ($entry in @($json.sts)) {
+                        if ($null -eq $entry -or $null -eq $entry.PSObject.Properties['host']) {
+                            throw 'Fichier HSTS inexploitable.'
+                        }
+                        if ($null -ne $entry -and $null -ne $entry.PSObject.Properties['host'] -and $entry.host -ceq $key) {
+                            $present = $true
+                        }
+                    }
+                }
+                if ($present) {
+                    $markers += $domain
+                }
+            }
+        }
+        [pscustomobject]@{
+            Markers = @($markers | Sort-Object -Unique)
+            Complete = $result.Complete
+            Bytes = $bytes.Length
+        }
+    } finally {
+        $stream.Dispose()
     }
 }
 
 function Test-LauncherCache {
+    Initialize-CacheReader
     [long]$remaining = 128MB
-    foreach ($root in @(Get-LauncherCacheRoots)) {
-        $leveldb = Join-Path $root 'Local Storage\leveldb'
-        $item = Get-LocalItem $leveldb
-        if ($null -eq $item) {
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($location in @(Get-CacheLocations)) {
+        $root = $location.Path
+        if ($null -eq (Get-LocalItem $root)) {
             continue
         }
         try {
-            Assert-NoReparsePoint $leveldb
-            $files = @(Get-ChildItem -LiteralPath $leveldb -File -Force -ErrorAction Stop | Where-Object {
-                    $_.Extension -in @('.log', '.ldb', '.sst')
-                })
-            if ($files.Count -gt 512) {
-                Add-Issue "Cache : limite de 512 fichiers atteinte : $leveldb"
-            }
-            foreach ($file in @($files | Select-Object -First 512)) {
-                if ($remaining -le 0) {
-                    Add-Issue 'Cache : limite globale de 128 Mio atteinte.'
-                    return
-                }
-                $budget = [Math]::Min(64MB, $remaining)
-                $hit = Find-AgentStateMarker $file.FullName $budget
-                $remaining -= [Math]::Min($file.Length, $budget)
-                if ($null -eq $hit) {
+            foreach ($file in @(Get-CacheFiles $root)) {
+                if (-not $seen.Add($file.FullName)) {
                     continue
                 }
-                $offsetLabel = if ($script:Language -eq 'en') {
-                    'byte'
-                } else {
-                    'octet'
+                if ($seen.Count -gt 512 -or $remaining -le 0) {
+                    throw 'Limite globale de lecture du cache atteinte.'
                 }
-                Add-Finding 'État de l agent signalé dans le cache NIKKE' "$($file.FullName) ($offsetLabel $($hit.Offset))" $true 'Historique' @{
-                    Path = $file.FullName
-                    Marker = 'k2f.agent.state'
-                    Evidence = 'k2f.agent.state'
-                    Storage = $true
-                    CacheRoot = $root
-                    ByteOffset = $hit.Offset
+                try {
+                    $budget = [Math]::Min(64MB, $remaining)
+                    $remaining -= [Math]::Min($file.Length, $budget)
+                    $evidence = Read-CacheEvidence $file.FullName $budget
+                    if (-not $evidence.Complete) {
+                        Add-Issue "Cache partiellement vérifié : $($file.FullName)"
+                    }
+                    foreach ($marker in $evidence.Markers) {
+                        $strong = $marker -in @('k2f.agent.state', 'k2f_chan', 'k2f.agent')
+                        Write-Detail "Marqueur de cache : $marker — $($file.FullName)"
+                        Add-Finding 'Trace signalée dans le cache du lanceur' $file.FullName $strong 'Historique' @{
+                            Path = $file.FullName
+                            Marker = $marker
+                            Evidence = $marker
+                            Storage = $true
+                            CacheRoot = $root
+                            SharedCache = $location.Shared
+                        }
+                    }
+                } catch {
+                    Add-Issue "Cache non lisible ou incomplet : $($file.FullName)"
                 }
             }
         } catch {
-            Add-Issue "Cache non parcouru : $leveldb"
+            Add-Issue "Cache non parcouru complètement : $root"
         }
     }
 }
 
-function Move-LauncherCacheToQuarantine($Finding, [string]$Folder) {
-    $root = [IO.Path]::GetFullPath($Finding.Target.CacheRoot).TrimEnd('\')
+function Invoke-CacheSnapshot {
+    $savedFindings = $script:Findings
+    $savedSeen = $script:SeenFindings
+    $savedIssues = $script:Issues
+    $savedQuiet = $script:QuietScan
+    try {
+        $script:Findings = New-Object 'System.Collections.Generic.List[object]'
+        $script:SeenFindings = @{}
+        $script:Issues = New-Object 'System.Collections.Generic.List[string]'
+        $script:QuietScan = $true
+        $check = Invoke-IndependentCheck 'Cache NIKKE et profil CEF : traces connues' {
+            Test-LauncherCache
+        }
+        $rows = @($script:Findings.ToArray())
+        if (@($rows | Where-Object {
+                    $_.Strong
+                }).Count -gt 0) {
+            $script:HistoricalExposure = $true
+            $script:SessionExposure = $true
+        }
+        [pscustomobject]@{
+            Findings = $rows
+            Issues = @($script:Issues.ToArray())
+            Checks = @($check)
+        }
+    } finally {
+        $script:Findings = $savedFindings
+        $script:SeenFindings = $savedSeen
+        $script:Issues = $savedIssues
+        $script:QuietScan = $savedQuiet
+    }
+}
+
+function Assert-NikkeCachePath([string]$Path) {
+    $full = [IO.Path]::GetFullPath($Path).TrimEnd('\')
     $allowed = @(Get-LauncherCacheRoots | ForEach-Object {
             [IO.Path]::GetFullPath($_).TrimEnd('\')
         })
-    if ($root -notin $allowed -or $Finding.Target.Marker -ne 'k2f.agent.state' -or -not $Finding.Strong) {
-        throw 'Cache hors du périmètre autorisé.'
+    if ($full -notin $allowed) {
+        throw 'Ce dossier ne fait pas partie des caches NIKKE autorisés.'
     }
-    Assert-NoReparsePoint $root
-    $evidence = [IO.Path]::GetFullPath($Finding.Target.Path)
-    if ([IO.Path]::GetDirectoryName($evidence) -ine (Join-Path $root 'Local Storage\leveldb') -or [IO.Path]::GetExtension($evidence) -notin @('.log', '.ldb', '.sst')) {
-        throw 'Preuve de cache non reconnue.'
+    Assert-NoReparsePoint $full
+    if (-not [IO.Directory]::Exists($full)) {
+        throw 'Cache NIKKE introuvable.'
     }
-    if ($null -eq (Find-AgentStateMarker $evidence)) {
-        throw 'Marqueur de cache non retrouvé ; déplacement annulé.'
+    $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($full))
+    if ($drive.DriveType -ne [IO.DriveType]::Fixed) {
+        throw 'Suppression du cache limitée aux disques locaux fixes.'
     }
-    $destination = $root + '.NIKKE-quarantaine-' + [guid]::NewGuid().ToString('N')
-    $manifest = Join-Path $Folder ('cache-' + [guid]::NewGuid().ToString('N') + '.json')
-    [pscustomobject]@{
-        Source = $root
-        Destination = $destination
-        Marker = 'k2f.agent.state'
-        Date = (Get-Date).ToString('o')
-    } |
-    ConvertTo-Json | Set-Content -LiteralPath $manifest -Encoding UTF8 -ErrorAction Stop
-    # Same-volume rename: recoverable, no recursive deletion, no browser-profile changes.
-    Move-Item -LiteralPath $root -Destination $destination -ErrorAction Stop
-    if (Test-Path -LiteralPath $root) {
-        throw 'Cache source toujours présent après déplacement.'
+    return $full
+}
+
+function Assert-LauncherClosed {
+    $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
+    foreach ($process in @(Get-Process -ErrorAction Stop)) {
+        if ($process.ProcessName -match '^(nikke_launcher(?:_hmt|_google)?|nikke|tbs_browser)$' -and $process.SessionId -eq $session) {
+            throw 'Fermez NIKKE et son lanceur, puis réessayez. Aucun programme ne sera fermé de force.'
+        }
     }
-    if (-not (Test-Path -LiteralPath $destination -PathType Container)) {
-        throw 'Déplacement du cache non confirmé.'
+}
+
+function Remove-NikkeCache([string]$Path, [string]$ReportFile) {
+    $root = Assert-NikkeCachePath $Path
+    $report = [IO.Path]::GetFullPath($ReportFile)
+    if ($report.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase) -or -not [IO.File]::Exists($report) -or (Get-Item -LiteralPath $report -ErrorAction Stop).Length -eq 0) {
+        throw 'Rapport sauvegardé hors du cache requis avant suppression.'
     }
-    return $destination
+    Assert-NoReparsePoint $report
+    Assert-LauncherClosed
+    Initialize-CacheReader
+    [NikkeTrace.CacheDelete27]::Run($root, $false)
+    $staged = $root + '.NikkeTrace-delete-' + [guid]::NewGuid().ToString('N')
+    [IO.Directory]::Move($root, $staged)
+    try {
+        [NikkeTrace.CacheDelete27]::Run($staged, $true)
+        if ([IO.Directory]::Exists($staged) -or [IO.Directory]::Exists($root)) {
+            throw 'Cache restant ou recréé pendant la suppression.'
+        }
+    } catch {
+        if ([IO.Directory]::Exists($staged)) {
+            if (-not [IO.Directory]::Exists($root)) {
+                [IO.Directory]::Move($staged, $root)
+            }
+            else {
+                Write-Report "Cache partiellement conservé : $staged" Yellow
+            }
+        }
+        throw
+    }
+}
+
+function Offer-LauncherCacheRemoval {
+    Write-Report ''
+    Write-Report 'SUPPRESSION FACULTATIVE DU CACHE NIKKE' Cyan
+    $roots = New-Object 'System.Collections.Generic.List[string]'
+    try {
+        foreach ($path in @(Get-LauncherCacheRoots)) {
+            if ($null -ne (Get-LocalItem $path)) {
+                $roots.Add((Assert-NikkeCachePath $path))
+            }
+        }
+    } catch {
+        Write-Report 'Cache non supprimé : son emplacement ne peut pas être confirmé.' Yellow
+        Write-Detail $_.Exception.Message
+        return
+    }
+    if ($roots.Count -eq 0) {
+        Write-Report 'Aucun cache NIKKE trouvé aux emplacements habituels.'
+        return
+    }
+    $before = Invoke-CacheSnapshot
+    if ($null -ne $script:CurrentSnapshot) {
+        $previousCache = [pscustomobject]@{
+            Findings = @($script:CurrentSnapshot.Findings | Where-Object { $_.Target.ContainsKey('Storage') -and $_.Target.Storage })
+        }
+        [void](Compare-TraceSnapshots $previousCache $before)
+    }
+    foreach ($path in $roots) {
+        Write-Report "Cache NIKKE proposé à la suppression : $path"
+    }
+    Write-Report 'Le profil CEF partagé et les profils des navigateurs seront conservés.'
+    Write-Report 'Suppression définitive : vous pourrez être déconnecté du lanceur et ses réglages seront réinitialisés.' Yellow
+    Write-Report 'Le rapport conserve les traces détectées, pas une copie des fichiers du cache.'
+    try {
+        Save-Report -Required
+        if (-not $script:ReportPath -or -not [IO.File]::Exists($script:ReportPath)) {
+            throw 'Rapport absent.'
+        }
+        foreach ($root in $roots) {
+            if ([IO.Path]::GetFullPath($script:ReportPath).StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'Rapport situé dans le cache.'
+            }
+        }
+    } catch {
+        Write-Report 'Rapport non sauvegardé : aucun cache ne sera supprimé.' Yellow
+        return
+    }
+    Write-Report "Rapport sauvegardé avant suppression : $script:ReportPath"
+    if (-not (Confirm-Action 'Supprimer définitivement ces caches NIKKE ?')) {
+        Write-Report 'Suppression du cache refusée : aucun fichier supprimé.'
+        return
+    }
+    $failed = 0
+    foreach ($path in $roots) {
+        try {
+            Remove-NikkeCache $path $script:ReportPath
+            Write-Report "CACHE NIKKE SUPPRIMÉ ET ABSENCE CONFIRMÉE : $path" Green
+        } catch {
+            $failed++
+            Write-Report "CACHE NON SUPPRIMÉ OU SUPPRESSION INCOMPLÈTE : $path" Yellow
+            if ($_.Exception.Message -match '^Fermez NIKKE') {
+                Write-Report 'Fermez NIKKE et son lanceur, puis réessayez. Aucun programme ne sera fermé de force.' Yellow
+            }
+            else {
+                Write-Report 'Consultez le rapport pour le détail ; aucun retrait non confirmé ne sera annoncé comme réussi.' Yellow
+            }
+            Write-Detail $_.Exception.Message
+        }
+    }
+    $after = Invoke-CacheSnapshot
+    $changes = @(Compare-TraceSnapshots $before $after)
+    foreach ($change in $changes) {
+        Write-Report "Cache après suppression : $($change.State) — $($change.Finding.Location)"
+    }
+    if ($after.Findings.Count -gt 0) {
+        Write-Report 'TRACES ENCORE PRÉSENTES OU À EXAMINER DANS LES CACHES :' Yellow
+        foreach ($finding in $after.Findings) {
+            Write-Report "  $($finding.Target.Marker) — $($finding.Location)" Yellow
+        }
+    } elseif ($failed -eq 0 -and $after.Checks[0].State -eq 'Effectué') {
+        Write-Report 'AUCUNE TRACE CONNUE TROUVÉE DANS LES CACHES VÉRIFIÉS.' Green
+    } else {
+        Write-Report 'Vérification du cache incomplète : aucun nettoyage global ne peut être confirmé.' Yellow
+    }
+    if ($null -ne $script:CurrentSnapshot) {
+        $script:CurrentSnapshot.Findings = @($script:CurrentSnapshot.Findings | Where-Object {
+                -not $_.Target.ContainsKey('Storage')
+            }) + @($after.Findings)
+        $script:CurrentSnapshot.Issues = @($script:CurrentSnapshot.Issues) + @($after.Issues)
+        $script:CurrentSnapshot.Checks = @($script:CurrentSnapshot.Checks | Where-Object {
+                $_.Name -notlike 'Cache NIKKE*'
+            }) + @($after.Checks)
+    }
+    Show-AccountPriority
+    Save-Report
 }
 
 
@@ -4574,7 +5306,7 @@ function Invoke-TraceScan {
         $checks.Add((Invoke-IndependentCheck 'Fichiers temporaires signalés' {
                     Test-TemporaryFiles
                 }))
-        $checks.Add((Invoke-IndependentCheck 'Cache NIKKE : état de l agent' {
+        $checks.Add((Invoke-IndependentCheck 'Cache NIKKE et profil CEF : traces connues' {
                     Test-LauncherCache
                 }))
         $checks.Add((Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' {
@@ -4653,6 +5385,31 @@ function Read-RegistryArtifact([hashtable]$Target) {
 }
 
 function Get-ArtifactState($Finding) {
+    if ($Finding.Target.ContainsKey('Storage') -and $Finding.Target.Storage) {
+        try {
+            if (-not [IO.Directory]::Exists([IO.Path]::GetPathRoot($Finding.Target.Path))) {
+                return 'Inconnu'
+            }
+            $item = Get-Item -LiteralPath $Finding.Target.Path -Force -ErrorAction Stop
+            if ($item.PSIsContainer) {
+                return 'Inconnu'
+            }
+            $evidence = Read-CacheEvidence $item.FullName
+            if ($Finding.Target.Marker -in $evidence.Markers) {
+                return 'Present'
+            }
+            if (-not $evidence.Complete) {
+                return 'Inconnu'
+            }
+            return 'Absent'
+        } catch [System.Management.Automation.ItemNotFoundException] {
+            return 'Absent'
+        }
+        catch {
+            return 'Inconnu'
+        }
+    }
+
     if ($Finding.Type -eq 'Registre') {
         return Read-RegistryArtifact $Finding.Target
     }
@@ -4682,12 +5439,12 @@ function Compare-TraceSnapshots($Before, $After) {
     $previous = @{}
     $current = @{}
     foreach ($f in $After.Findings) {
-        if ($f.Type -in @('Fichier', 'Registre')) {
+        if (($f.Type -in @('Fichier', 'Registre') -or ($f.Target.ContainsKey('Storage') -and $f.Target.Storage))) {
             $current[$f.Id] = $true
         }
     }
     foreach ($f in $Before.Findings) {
-        if ($f.Type -notin @('Fichier', 'Registre')) {
+        if (-not ($f.Type -in @('Fichier', 'Registre') -or ($f.Target.ContainsKey('Storage') -and $f.Target.Storage))) {
             continue
         }
         $previous[$f.Id] = $true
@@ -4716,7 +5473,7 @@ function Compare-TraceSnapshots($Before, $After) {
         }
     }
     foreach ($f in $After.Findings) {
-        if ($f.Type -in @('Fichier', 'Registre') -and -not $previous.ContainsKey($f.Id)) {
+        if (($f.Type -in @('Fichier', 'Registre') -or ($f.Target.ContainsKey('Storage') -and $f.Target.Storage)) -and -not $previous.ContainsKey($f.Id)) {
             $results.Add([pscustomobject]@{
                     State = 'Nouveau'; Finding = $f
                 })
@@ -4726,6 +5483,9 @@ function Compare-TraceSnapshots($Before, $After) {
 }
 
 function Get-FindingArea($Finding) {
+    if ($Finding.Target.ContainsKey('SharedCache') -and $Finding.Target.SharedCache) {
+        return 'CEF'
+    }
     if ($Finding.Type -eq 'Historique') {
         return 'NIKKE'
     }
@@ -5161,18 +5921,8 @@ function Assert-NoReparsePoint([string]$Path) {
 }
 
 function Get-CleanupPlan($Snapshot) {
-    $cacheRoots = @{}
     foreach ($f in $Snapshot.Findings) {
-        if ($f.Type -eq 'Historique' -and $f.Strong -and $f.Target.ContainsKey('Storage') -and $f.Target.Storage -and $f.Target.Marker -eq 'k2f.agent.state') {
-            $root = [string]$f.Target.CacheRoot
-            if (-not $cacheRoots.ContainsKey($root)) {
-                $cacheRoots[$root] = $true
-                [pscustomobject]@{
-                    Action = 'Cache NIKKE'
-                    Finding = $f
-                }
-            }
-        } elseif ($f.Type -eq 'Fichier') {
+        if ($f.Type -eq 'Fichier') {
             $path = $f.Target.Path
             $tempMatch = $false
             try {
@@ -5327,17 +6077,6 @@ function Invoke-TargetedCleanup {
     }
     Write-Host 'Fermez NIKKE et les navigateurs après avoir enregistré vos travaux. Aucun processus ne sera arrêté de force.'
     Write-Host 'Les fichiers seront mis en quarantaine. Seule la référence HKCU pointant vers le chemin Chrome documenté peut être retirée.'
-    if (@($plan | Where-Object {
-                $_.Action -eq 'Cache NIKKE'
-            }).Count -gt 0) {
-        Write-Host 'Le cache du lanceur concerné sera renommé sur place. Ses réglages et connexions peuvent être réinitialisés.'
-        Write-Host 'Le dossier Chrome légitime et les profils des navigateurs seront conservés.'
-        foreach ($entry in @($plan | Where-Object {
-                    $_.Action -eq 'Cache NIKKE'
-                })) {
-            Write-Host $entry.Finding.Target.CacheRoot
-        }
-    }
     foreach ($action in $plan) {
         Write-Host "  $($action.Action) : $($action.Finding.Location)"
     }
@@ -5364,10 +6103,6 @@ function Invoke-TargetedCleanup {
                     } else {
                         Write-Report "Déjà absente au moment du nettoyage : $($f.Location)"
                     }
-                } elseif ($action.Action -eq 'Cache NIKKE') {
-                    $destination = Move-LauncherCacheToQuarantine $f $folder
-                    Write-Report 'CACHE NIKKE ISOLÉ : dossier retiré de son chemin habituel, copie conservée.' Green
-                    Write-Report "Copie conservée : $destination"
                 } else {
                     $destination = Move-TraceToQuarantine $f $folder
                     Write-Report "QUARANTAINE CONFIRMÉE : $($f.Location)" Green
@@ -5605,7 +6340,7 @@ function Show-Help {
     Write-Host 'Cet outil communautaire recherche des traces connues ; il n est ni officiel ni un antivirus.'
     Write-Host 'Un seul fichier sert à vérifier le jeu, les navigateurs et le registre, puis à proposer un nettoyage ciblé avec accord.'
     Write-Host 'Jeu déjà supprimé ? Le mode dédié vérifie encore les navigateurs, le registre, les temporaires et les journaux résiduels connus.'
-    Write-Host 'Le cache NIKKE est aussi vérifié sans le jeu : marqueur k2f.agent.state, sans extraction des secrets.'
+    Write-Host 'Les caches NIKKE et le profil CEF sont vérifiés même sans le jeu : stockage local, scripts et traces réseau.'
     Write-Host 'Sans preuve conservée, une exécution passée reste indéterminée. Ne réinstallez pas le jeu pour cette vérification.'
     Write-Host 'PlatformExperienceHelper seul et onominan.tmp ne sont pas des indicateurs de cette attaque.'
     Write-Host 'Seule la DLL Chrome dans un sous-dossier de 64 caractères hexadécimaux est admise au nettoyage automatique.'
@@ -6006,6 +6741,7 @@ function Show-Actions {
             Write-Host '5  Retirer le jeu directement (copie récupérable)'
         }
         Write-Host '6  Bloquer les domaines signalés dans hosts (facultatif, admin)'
+        Write-Host '7  Supprimer le cache NIKKE (facultatif, après sauvegarde du rapport)'
         Write-Host 'D  Lire les détails de ce résultat'
         Write-Host 'P  Indiquer le dossier d un profil, puis revérifier'
         Write-Host 'B  Retour au menu principal / choisir un autre navigateur'
@@ -6029,6 +6765,9 @@ function Show-Actions {
             }
             '6' {
                 Offer-HostsBlock
+            }
+            '7' {
+                Offer-LauncherCacheRemoval
             }
             'd' {
                 Show-ResultDetails
@@ -6061,6 +6800,7 @@ function Show-Actions {
 }
 
 function Save-Report {
+    param([switch]$Required)
     if (-not $script:ReportPath) {
         $filename = 'Bilan-NIKKE-{0}-{1}.txt' -f (Get-Date -Format 'yyyyMMdd-HHmmss'), ([guid]::NewGuid().ToString('N').Substring(0, 6))
         $script:ReportPath = Join-Path (Join-Path ([IO.Path]::GetDirectoryName($LauncherPath)) 'Rapports-NIKKE') $filename
@@ -6073,6 +6813,9 @@ function Save-Report {
             $script:ReportPath = Join-Path $env:TEMP ([IO.Path]::GetFileName($script:ReportPath))
             $script:Report | Set-Content -LiteralPath $script:ReportPath -Encoding UTF8 -ErrorAction Stop
         } catch {
+            if ($Required) {
+                throw 'La sauvegarde du rapport a échoué.'
+            }
             Write-Host 'Bilan non enregistré : gardez cette fenêtre ouverte pour lire le résultat.'
             return
         }
@@ -6089,7 +6832,7 @@ function Invoke-NikkeCheck {
     }
     Write-Host ''
     Write-Host '========================================================'
-    Write-Host ' NikkeTrace — FR — VERSION 2.6' -ForegroundColor Cyan
+    Write-Host ' NikkeTrace — FR — VERSION 2.7' -ForegroundColor Cyan
     Write-Host '========================================================'
     Write-Host 'Vérification locale. Aucun nettoyage sans votre accord.'
     Write-Host 'Contrôle ciblé de cet incident, pas une analyse antivirus du PC.'
@@ -6106,6 +6849,7 @@ function Invoke-NikkeCheck {
             Write-Host '4  Comprendre l outil'
             Write-Host '5  Changer vos mots de passe : conseils'
             Write-Host '6  Bloquer les domaines signalés (facultatif, admin)'
+            Write-Host '7  Supprimer le cache NIKKE (facultatif, après sauvegarde du rapport)'
             Write-Host '0  Quitter'
             $choice = (Read-Host 'Votre choix [Entrée = 1]').Trim()
             if ($choice -eq '0') {
@@ -6120,6 +6864,9 @@ function Invoke-NikkeCheck {
             }
             if ($choice -eq '6') {
                 Offer-HostsBlock
+            }
+            if ($choice -eq '7') {
+                Offer-LauncherCacheRemoval
             }
             if ($choice -eq '3') {
                 $selectedBrowser = Select-Browser
@@ -6141,7 +6888,7 @@ function Invoke-NikkeCheck {
             $Navigateur = 'Tous'
         }
     }
-    Write-Detail "NikkeTrace 2.6 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
+    Write-Detail "NikkeTrace 2.7 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
     Write-Detail 'Signatures non validées ici sur un échantillon réel. Aucune extraction des mots de passe, cookies ou jetons.'
     Write-Detail 'Une empreinte DLL différente ne suffit pas à exclure cette attaque : la DLL peut varier selon la victime.'
     Write-Detail 'Contrôles TCP/DNS locaux ; blocage des domaines dans hosts uniquement sur accord explicite.'

@@ -1,5 +1,5 @@
 * text=auto
 *.ps1 text eol=crlf
-*.cmd -text
+*.cmd -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.py text eol=lf
 *.md text eol=lf
