@@ -6,8 +6,8 @@ NikkeTrace is a community tool for Windows 10/11 with Windows PowerShell 5.1. Th
 
 ## Run
 
-1. Open [NikkeTrace.cmd](NikkeTrace.cmd) and use GitHub's **Download raw file** button.
-2. Save the file, then double-click it on your Windows PC.
+1. Download `nikke-trace-v2.6.zip` from the [latest release](https://github.com/lolerki/nikke-trace/releases/latest).
+2. Extract the ZIP, then double-click `NikkeTrace.cmd` on your Windows PC.
 3. Press Enter for English, or choose `2` for French.
 4. Choose a check from the menu. Checks still work if the game or launcher has already been removed.
 
