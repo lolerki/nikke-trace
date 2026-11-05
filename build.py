@@ -9,6 +9,7 @@ payload = source.read_text(encoding='utf-8-sig').replace('\r\n', '\n')
 assert (root / 'LICENSE').read_text().strip() in payload
 bootstrap = (
     "$ErrorActionPreference='Stop'; "
+    "if($ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage'){Write-Host 'Windows application control restricts this session. NikkeTrace cannot run; no check was performed.'; exit 1}; "
     "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); "
     "$code=1; $scratch=Join-Path $env:TEMP ('NIKKE-Assistant-'+[guid]::NewGuid().ToString('N')); "
     "try { [void][IO.Directory]::CreateDirectory($scratch); "
@@ -34,6 +35,7 @@ set "NIKKE_EXIT=%ERRORLEVEL%"
 if not "%NIKKE_EXIT%"=="0" (
   echo The action did not complete. No cleanup can be confirmed.
   echo Do not disable your antivirus to run this tool.
+  echo Running as administrator does not override Smart App Control.
   pause
 )
 exit /b %NIKKE_EXIT%

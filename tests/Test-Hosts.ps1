@@ -231,7 +231,39 @@ try {
         $lock.Dispose()
     }
     Assert (($Report -join "`n") -match 'inaccessible ou utilisé' -and $answers.Count -eq 0) 'unreadable file is reported without claiming blocked domains or asking for UAC'
+    Initialize-Report
+    $shown.Clear()
+    [IO.File]::WriteAllText($path,'127.0.0.1 localhost')
+    $script:guidedOps=0
+    function Start-HostsBlockOperation {
+        param($Token)
+        $script:guidedOps++
+        [void](Add-KnownHostsBlocks $path $Token)
+        return 0
+    }
+    $answers.Enqueue('')
+    Offer-HostsBlock -Guided
+    Assert ($guidedOps -eq 0 -and [IO.File]::ReadAllText($path) -ceq '127.0.0.1 localhost') 'guided blocking defaults to no without elevation or writes'
+    foreach($domain in @('insightjs.com','analytics.insightjs.com','insightjs.org')) {
+        Assert ($previewAtConsent.Contains("  - $domain")) "guided preview names the website before consent: $domain"
+    }
+    Assert ($previewAtConsent -notmatch '0\.0\.0\.0|::1' -and $previewAtConsent -match 'sauvegarde' -and $previewAtConsent -match 'après votre accord') 'guided preview explains backup and administrator consent without requiring technical rules'
+    Assert (($Report -join "`n") -match '0\.0\.0\.0 insightjs.com' -and ($Report -join "`n") -match [regex]::Escape($path)) 'exact proposed rules and target path remain available in the private report'
+    Initialize-Report
+    $answers.Enqueue('o')
+    Offer-HostsBlock -Guided
+    Assert ($guidedOps -eq 1 -and (Read-HostsBlockState $path).Complete -and ($Report -join "`n") -match 'Blocage des sites confirmé') 'guided success also requires verified fake hosts contents'
+    Initialize-Report
+    Offer-HostsBlock -Guided
+    Assert ($guidedOps -eq 1 -and $answers.Count -eq 0 -and ($Report -join "`n") -match 'déjà bloqués') 'guided already-blocked result requires no new prompt or write'
+    Initialize-Report
+    [IO.File]::WriteAllText($path,'127.0.0.1 localhost')
+    function Start-HostsBlockOperation { param($Token) return 0 }
+    $answers.Enqueue('o')
+    Offer-HostsBlock -Guided
+    Assert (($Report -join "`n") -notmatch 'Blocage des sites confirmé' -and -not(Read-HostsBlockState $path).Complete) 'guided zero exit status without rules never claims success'
     $script:Language='en'
+    Assert ((Convert-UiText 'Bloquer ces sites maintenant ?') -eq 'Block these websites now?') 'the separate guided confirmation is translated into English'
     Assert ((Convert-UiText 'Ce blocage ne supprime pas une infection et ne bloque pas les connexions directes vers les IP signalées.') -like 'This block does not remove an infection*') 'English description explains the precise limits of hosts blocking'
     Assert ((Convert-UiText 'DOMAINES DÉJÀ BLOQUÉS DANS HOSTS — aucune modification ni demande administrateur nécessaire.') -like 'DOMAINS ALREADY BLOCKED IN HOSTS*') 'new verification result is translated into English'
     Microsoft.PowerShell.Utility\Write-Host "SUCCESS: $checks hosts-option checks on fake files only; no UAC or system hosts modification."

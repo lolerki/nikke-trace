@@ -67,6 +67,29 @@ try {
         }
         $script:answers.Dequeue()
     }
+    $nativeBrowserClosure=${function:Offer-BrowserClosure}
+    $nativeOpenWindows=${function:Get-OpenBrowserWindows}
+    $nativeCloseWindow=${function:Request-BrowserWindowClose}
+    $script:closeRequests=0
+    function Get-OpenBrowserWindows { param($Scope) [pscustomobject]@{ Browser='Firefox' } }
+    function Request-BrowserWindowClose { param($Window) $script:closeRequests++; return $true }
+    $NoPrompt=$false
+    $answers.Enqueue('y')
+    & $nativeBrowserClosure -Scope 'Tous'
+    Assert ($closeRequests -eq 1 -and $answers.Count -eq 0) 'browser closure requests consent once and continues without a second Enter prompt'
+    $answers.Enqueue('n')
+    & $nativeBrowserClosure -Scope 'Tous'
+    Assert ($closeRequests -eq 1 -and $answers.Count -eq 0) 'declining browser closure continues without closing a window or asking again'
+    function Request-BrowserWindowClose { param($Window) $script:closeRequests++; return $false }
+    $answers.Enqueue('y')
+    & $nativeBrowserClosure -Scope 'Tous'
+    Assert ($closeRequests -eq 2 -and $answers.Count -eq 0) 'an unsuccessful close request also continues without another prompt'
+    function Get-OpenBrowserWindows { param($Scope) @() }
+    & $nativeBrowserClosure -Scope 'Tous'
+    Assert ($closeRequests -eq 2 -and $answers.Count -eq 0) 'no open browser needs no confirmation'
+    Set-Item Function:\Get-OpenBrowserWindows -Value $nativeOpenWindows
+    Set-Item Function:\Request-BrowserWindowClose -Value $nativeCloseWindow
+    $NoPrompt=$true
     function Get-CleanupBootId {
         $script:boot
     }
@@ -124,6 +147,15 @@ try {
     Assert ((Get-SnapshotConclusion $clean).Color -eq 'Green') 'a later confirmed action resolves the matching previous failure'
     $script:CleanupOutcomes.Clear()
 
+    $script:CurrentSnapshot=Snapshot
+    $originalCandidates=${function:Get-NikkeRemovalCandidates}
+    function Get-NikkeRemovalCandidates { Join-Path $fixture 'SyntheticNIKKE' }
+    $shown.Clear()
+    $answers.Enqueue('n')
+    $result=Invoke-GuidedCleanup
+    Assert ($result -eq 'Declined' -and ($shown.Text -join "`n") -notmatch 'precautionary cache') 'an installation-only proposal never announces a nonexistent cache reset'
+    ${function:Get-NikkeRemovalCandidates}=$originalCandidates
+
     $root=@(Get-LauncherCacheRoots)[0]
     $cacheFile=Join-Path $root 'Code Cache\js\a_0'
     [void][IO.Directory]::CreateDirectory((Split-Path $cacheFile))
@@ -135,13 +167,17 @@ try {
     Assert ($scanCalls -eq 1) 'cleanup automatically performs a fresh final check'
     Assert (($shown.Text -join "`n") -match 'precaution') 'cache presence is not described as an infection'
     $report=[IO.File]::ReadAllText($script:ReportPath)
-    Assert ($report.StartsWith('NIKKETRACE 3.0') -and $report -match 'Completed checks: 9' -and $report -match 'Confirmed actions: 1') 'report starts with a player-readable final summary and action counts'
+    Assert ($report.StartsWith('NIKKETRACE 3.1') -and $report -match 'Completed checks: 9' -and $report -match 'Confirmed actions: 1') 'report starts with a player-readable final summary and action counts'
     Assert (($report.IndexOf('TECHNICAL DETAILS')) -gt $report.IndexOf('RECOMMENDED ACTIONS')) 'technical details follow the readable recommendations'
 
     Initialize-Report
     $dll=Join-Path $env:LOCALAPPDATA ('Google\Chrome\User Data\PlatformExperienceHelper\'+('a'*64)+'\platform_experience_helper.dll')
     [void][IO.Directory]::CreateDirectory((Split-Path $dll))
     [IO.File]::WriteAllText($dll,'INERT KNOWN-PATH FILE')
+    $legitimateHelper=Join-Path (Split-Path (Split-Path $dll)) 'platform_experience_helper.exe'
+    $unrelatedFile=Join-Path (Split-Path $dll) 'unrelated.txt'
+    [IO.File]::WriteAllText($legitimateHelper,'INERT LEGITIMATE HELPER')
+    [IO.File]::WriteAllText($unrelatedFile,'INERT UNRELATED FILE')
     $dllHash=(Get-FileHash -LiteralPath $dll).Hash
     $fileFinding=[pscustomobject]@{
         Id='file'
@@ -171,10 +207,10 @@ try {
         Location='fake HKCU entry'
         Target=$target
     }
-    $nativeMove=${function:Move-TraceToQuarantine}
-    function Move-TraceToQuarantine {
-        param($Finding,$Folder)$script:events.Add('file')
-        & $nativeMove $Finding $Folder
+    $nativeDelete=${function:Remove-ConfirmedFile}
+    function Remove-ConfirmedFile {
+        param($Finding)$script:events.Add('file')
+        & $nativeDelete $Finding
     }
     $script:registryCalls=0
     function Remove-KnownRegistryOverride {
@@ -186,6 +222,7 @@ try {
     $script:CurrentSnapshot=Snapshot @($fileFinding,$registryFinding)
     $answers.Enqueue('n')
     Assert ((Invoke-GuidedCleanup) -eq 'Declined' -and $registryCalls -eq 0 -and (Test-Path -LiteralPath $dll)) 'refusing the combined cleanup authorizes no registry or file change'
+    Assert ([IO.File]::ReadAllText($script:ReportPath) -match 'deleted permanently, without keeping copies') 'permanent deletion is explicitly documented before consent'
     [void][IO.Directory]::CreateDirectory((Split-Path $cacheFile))
     [IO.File]::WriteAllText($cacheFile,'normal cache')
     $events.Clear()
@@ -201,9 +238,18 @@ try {
     $script:CurrentSnapshot=Snapshot @($fileFinding)
     $answers.Enqueue('y')
     $result=Invoke-GuidedCleanup
-    Assert ($result -eq 'Completed' -and -not(Test-Path -LiteralPath $dll) -and -not(Test-Path -LiteralPath $root)) 'after restart, a fresh confirmation permits file quarantine and cache reset'
+    Assert ($result -eq 'Completed' -and -not(Test-Path -LiteralPath $dll) -and -not(Test-Path -LiteralPath $root)) 'after restart, a fresh confirmation permits permanent file deletion and cache reset'
+    Assert ((Test-Path -LiteralPath $legitimateHelper) -and (Test-Path -LiteralPath $unrelatedFile)) 'permanent DLL deletion preserves the legitimate helper and neighboring files'
+    Assert (@(Get-ChildItem -LiteralPath $env:LOCALAPPDATA -Recurse -File -Filter '*.quarantaine').Count -eq 0) 'permanent deletion retains no quarantine copy'
     Assert (($events -join ',') -eq 'registry,file,scan') 'registry mutation precedes the boot barrier, file removal and fresh verification'
     Assert ((Get-CleanupRestartState) -eq 'None') 'successful continuation clears the restart checkpoint'
+
+    Initialize-Report
+    [IO.File]::WriteAllText($dll,'INERT CHANGED FILE')
+    $script:CurrentSnapshot=Snapshot @($fileFinding)
+    $answers.Enqueue('y')
+    $result=Invoke-GuidedCleanup
+    Assert ($result -eq 'Failed' -and [IO.File]::ReadAllText($dll) -ceq 'INERT CHANGED FILE') 'a file changed since the scan cannot be permanently deleted'
 
     Initialize-Report
     [IO.File]::WriteAllText($dll,'INERT LOCKED FILE')
@@ -233,7 +279,7 @@ try {
         throw 'Simulated complete recheck failure'
     }
     $answers.Enqueue('y')
-    Assert ((Invoke-GuidedCleanup) -eq 'Failed' -and -not(Test-Path -LiteralPath $dll)) 'successful file isolation followed by a failed recheck is not reported as completed cleanup'
+    Assert ((Invoke-GuidedCleanup) -eq 'Failed' -and -not(Test-Path -LiteralPath $dll)) 'successful file deletion followed by a failed recheck is not reported as completed cleanup'
     Assert ((Get-SnapshotConclusion $script:CurrentSnapshot).Color -ne 'Green') 'an interrupted final scan cannot produce a reassuring global result'
     Set-Item Function:\Invoke-TraceScan -Value $savedScan
     [IO.File]::WriteAllText($dll,'INERT FILE RECREATED FOR THE NEXT TEST')
@@ -255,15 +301,111 @@ try {
     Assert ((Invoke-GuidedCleanup) -eq 'Failed' -and $registryCalls -eq $callsBefore -and $answers.Count -eq 0) 'corrupt checkpoint is never treated as permission to continue'
     Clear-CleanupRestartState
 
+    $outside=Join-Path $fixture 'platform_experience_helper.dll'
+    [IO.File]::WriteAllText($outside,'INERT SAME-NAME FILE OUTSIDE THE ALLOWED PATH')
+    $outsideFinding=[pscustomobject]@{
+        Type='Fichier'; Strong=$true; Location=$outside
+        Target=@{ Path=$outside; Sha256=(Get-FileHash -LiteralPath $outside).Hash }
+    }
+    $blocked=$false
+    try { & $nativeDelete $outsideFinding } catch { $blocked=$true }
+    Assert ($blocked -and (Test-Path -LiteralPath $outside)) 'the deletion function itself rejects an unrelated same-name file'
+
+    $linked=Join-Path (Split-Path (Split-Path $dll)) ('b'*64)
+    $linkTarget=Join-Path $fixture 'junction-target'
+    [void][IO.Directory]::CreateDirectory($linkTarget)
+    $targetFile=Join-Path $linkTarget 'platform_experience_helper.dll'
+    [IO.File]::WriteAllText($targetFile,'INERT REDIRECTED TARGET')
+    [void](New-Item -ItemType Junction -Path $linked -Value $linkTarget)
+    try {
+        $blocked=$false
+        try { [NikkeTrace.CacheDelete27]::DeleteArtifact((Join-Path $linked 'platform_experience_helper.dll'),(Get-FileHash -LiteralPath $targetFile).Hash) } catch { $blocked=$true }
+        Assert ($blocked -and (Test-Path -LiteralPath $targetFile)) 'native file deletion rejects a redirected parent and preserves the target'
+    } finally {
+        [IO.Directory]::Delete($linked)
+    }
+
+    Initialize-Report
+    $loginData=Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data\Default\Login Data'
+    [void][IO.Directory]::CreateDirectory((Split-Path $loginData))
+    [IO.File]::WriteAllText($loginData,'INERT ORIGINAL BROWSER DATABASE')
+    $temporaryCopy=Join-Path $env:TEMP 'k2f-bcreds-1234567890-123456.db'
+    [IO.File]::WriteAllText($temporaryCopy,'INERT STOLEN-DATA COPY')
+    Test-TemporaryFiles
+    $temporaryFinding=@($script:Findings | Where-Object { $_.Location -eq $temporaryCopy })
+    Assert ($temporaryFinding.Count -eq 1 -and -not $temporaryFinding[0].Target.ContainsKey('Sha256')) 'temporary data copies are recognized by name without opening their secret contents'
+    & $nativeDelete $temporaryFinding[0]
+    Assert (-not(Test-Path -LiteralPath $temporaryCopy) -and [IO.File]::ReadAllText($loginData) -ceq 'INERT ORIGINAL BROWSER DATABASE') 'permanent cleanup deletes the temporary copy while preserving the original browser database'
+
     Initialize-Report
     $callsBefore=$scanCalls
     $NoPrompt=$false
+    $hostsPath=Join-Path $fixture 'hosts'
+    $originalHosts='127.0.0.1 localhost'
+    [IO.File]::WriteAllText($hostsPath,$originalHosts)
+    $script:hostOps=0
+    function Get-HostsBlockPath { $hostsPath }
+    function Start-HostsBlockOperation {
+        param($Token)
+        $script:hostOps++
+        [void](Add-KnownHostsBlocks $hostsPath $Token)
+        return 0
+    }
     $answers.Enqueue('1')
+    $answers.Enqueue('n')
     $answers.Enqueue('q')
     $result=Invoke-NikkeCheck
     Assert ($result -eq 'Quitter' -and $scanCalls -eq $callsBefore+1) 'recommended route runs one complete scan with no separate game-removed or cache menu'
-    Assert ($answers.Count -eq 0) 'the recommended clean result can be understood and exited with no extra wizard questions'
+    Assert ($answers.Count -eq 0 -and $hostOps -eq 0 -and [IO.File]::ReadAllText($hostsPath) -ceq $originalHosts) 'the clean result offers optional blocking without authorizing a write'
     Assert (($shown.Text -join "`n") -notmatch '7  ') 'standalone cache menu is removed'
+
+    $cacheFile=Join-Path (@(Get-LauncherCacheRoots)[0]) 'Code Cache\js\inert'
+    [void][IO.Directory]::CreateDirectory((Split-Path $cacheFile))
+    [IO.File]::WriteAllText($cacheFile,'INERT CACHE')
+    foreach($answer in @('1','n','y','q')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and (Test-Path -LiteralPath $cacheFile) -and $hostOps -eq 1 -and (Read-HostsBlockState $hostsPath).Complete) 'cleanup may be declined while blocking is independently accepted on a fake hosts file'
+    Assert ($answers.Count -eq 0) 'cleanup and blocking consume separate confirmations'
+    Remove-Item -LiteralPath (@(Get-LauncherCacheRoots)[0]) -Recurse -Force
+
+    foreach($answer in @('1','q')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $hostOps -eq 1 -and $answers.Count -eq 0) 'already blocked domains need no extra consent or operation in the recommended route'
+
+    [IO.File]::WriteAllText($hostsPath,$originalHosts)
+    [void][IO.Directory]::CreateDirectory((Split-Path $cacheFile))
+    [IO.File]::WriteAllText($cacheFile,'INERT CACHE')
+    foreach($answer in @('1','y','n','q')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and -not(Test-Path -LiteralPath $cacheFile) -and $hostOps -eq 1 -and [IO.File]::ReadAllText($hostsPath) -ceq $originalHosts) 'accepting cache cleanup never authorizes domain blocking'
+
+    [void][IO.Directory]::CreateDirectory((Split-Path $cacheFile))
+    [IO.File]::WriteAllText($cacheFile,'INERT CACHE')
+    $originalCleanup=${function:Invoke-GuidedCleanup}
+    function Invoke-GuidedCleanup { $script:CleanupNeedsRestart=$true; return 'RestartRequired' }
+    foreach($answer in @('1','n','')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $answers.Count -eq 0 -and $hostOps -eq 1) 'optional blocking is offered before exiting for a required restart'
+    Set-Item Function:\Invoke-GuidedCleanup -Value $originalCleanup
+    Remove-Item -LiteralPath (@(Get-LauncherCacheRoots)[0]) -Recurse -Force
+
+    [IO.File]::WriteAllText($hostsPath,$originalHosts)
+    $callsBefore=$scanCalls
+    foreach($answer in @('1','n','v','q')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $scanCalls -eq $callsBefore+2 -and $answers.Count -eq 0 -and $hostOps -eq 1) 'rechecking does not repeat a declined blocking offer'
+
+    foreach($answer in @('a','1','2','q')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $answers.Count -eq 0 -and $hostOps -eq 1) 'an advanced browser-only check does not trigger the recommended blocking offer'
+    $NoPrompt=$true
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $answers.Count -eq 0 -and $hostOps -eq 1) 'non-interactive checks never offer or apply domain blocking'
+    $NoPrompt=$false
+    $callsBefore=$scanCalls
+    foreach($answer in @('s','0')) { $answers.Enqueue($answer) }
+    $result=Invoke-NikkeCheck
+    Assert ($result -eq 'Quitter' -and $scanCalls -eq $callsBefore -and $hostOps -eq 1 -and $answers.Count -eq 0) 'account advice only shows information and returns to the menu without scanning or blocking'
     $script:Language='fr'
     Assert ((Convert-UiText '1  Vérification complète et nettoyage guidé (recommandé)') -match '^1  Vérification') 'French keeps the same single recommended workflow'
     $script:Language='en'
