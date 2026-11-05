@@ -47,6 +47,13 @@ try {
     Assert ($Issues.Count -eq 1 -and $LogsRead -eq 0) 'a failed log read is recorded as an issue'
 
     Initialize-Report
+    $candidate = Join-Path $fixture 'tinyget.synthetic.log'
+    [IO.File]::WriteAllText($candidate, ('Z' * 205135), [Text.Encoding]::ASCII)
+    Test-LogFile $candidate
+    Assert ($Findings.Count -eq 1 -and -not $Findings[0].Strong) 'officially reported payload size without the known hash is a review item, not a confirmed infection'
+    Assert (@(Get-CleanupPlan ([pscustomobject]@{Findings=@($Findings.ToArray())})).Count -eq 0) 'file size alone never authorizes automatic deletion'
+
+    Initialize-Report
     $helper = Join-Path $fixture 'Google\Chrome\User Data\PlatformExperienceHelper'
     [void][IO.Directory]::CreateDirectory($helper)
     $legitimate = Join-Path $helper 'platform_experience_helper.exe'

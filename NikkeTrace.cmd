@@ -15,6 +15,28 @@ exit /b %NIKKE_EXIT%
 :NIKKE_POWERSHELL_PAYLOAD
 #requires -Version 5.1
 <#
+MIT License
+
+Copyright (c) 2026 lolerki
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 NikkeTrace: local checks and optional targeted cleanup for known NIKKE incident traces.
 Requires Windows PowerShell 5.1.
 #>
@@ -31,6 +53,8 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $script:SessionExposure = $false
+$script:ExtraNikkePath = @()
+$script:NextBrowser = $null
 $script:CustomBrowserRoots = New-Object 'System.Collections.Generic.List[object]'
 
 
@@ -40,18 +64,32 @@ $script:TranslationCache = @{}
 $script:UiCatalog = @'
 [
     {
-        "French": "Marqueur de cache : {0} — {1}",
-        "Pattern": "^Marqueur\\ de\\ cache\\ :\\ (?<v0>.*?)\\ —\\ (?<v1>.*?)$",
-        "English": "Cache marker: {0} — {1}",
-        "Count": 2,
-        "Weight": 29
+        "French": "Un ancien journal peut manquer après désinstallation ; les autres contrôles restent utiles. Ne réinstallez pas le jeu pour récupérer ce journal.",
+        "Pattern": "^Un\\ ancien\\ journal\\ peut\\ manquer\\ après\\ désinstallation\\ ;\\ les\\ autres\\ contrôles\\ restent\\ utiles\\.\\ Ne\\ réinstallez\\ pas\\ le\\ jeu\\ pour\\ récupérer\\ ce\\ journal\\.$",
+        "English": "An old log may be missing after uninstalling; the other checks remain useful. Do not reinstall the game to recover this log.",
+        "Count": 0,
+        "Weight": 144
     },
     {
-        "French": "Consultez le rapport pour le détail ; aucun retrait non confirmé ne sera annoncé comme réussi.",
-        "Pattern": "^Consultez\\ le\\ rapport\\ pour\\ le\\ détail\\ ;\\ aucun\\ retrait\\ non\\ confirmé\\ ne\\ sera\\ annoncé\\ comme\\ réussi\\.$",
-        "English": "See the report for details; an unconfirmed removal will never be reported as successful.",
+        "French": "Avant de commencer : déconnectez ce PC d Internet, fermez NIKKE, son lanceur et les navigateurs. Vérifiez aussi les icônes près de l horloge.",
+        "Pattern": "^Avant\\ de\\ commencer\\ :\\ déconnectez\\ ce\\ PC\\ d\\ Internet,\\ fermez\\ NIKKE,\\ son\\ lanceur\\ et\\ les\\ navigateurs\\.\\ Vérifiez\\ aussi\\ les\\ icônes\\ près\\ de\\ l\\ horloge\\.$",
+        "English": "Before starting: disconnect this PC from the Internet and close NIKKE, its launcher and browsers. Also check the icons near the clock.",
         "Count": 0,
-        "Weight": 94
+        "Weight": 141
+    },
+    {
+        "French": "Sécurisez vos comptes depuis un appareil sain : mots de passe enregistrés ou utilisés sur ce PC, sessions ouvertes et clés ou jetons exposés.",
+        "Pattern": "^Sécurisez\\ vos\\ comptes\\ depuis\\ un\\ appareil\\ sain\\ :\\ mots\\ de\\ passe\\ enregistrés\\ ou\\ utilisés\\ sur\\ ce\\ PC,\\ sessions\\ ouvertes\\ et\\ clés\\ ou\\ jetons\\ exposés\\.$",
+        "English": "Secure your accounts from a clean device: passwords saved or used on this PC, open sessions and exposed keys or tokens.",
+        "Count": 0,
+        "Weight": 141
+    },
+    {
+        "French": "Restez hors ligne, gardez le lanceur fermé et suivez le nettoyage guidé. Effectuez ensuite une analyse antivirus complète et hors connexion.",
+        "Pattern": "^Restez\\ hors\\ ligne,\\ gardez\\ le\\ lanceur\\ fermé\\ et\\ suivez\\ le\\ nettoyage\\ guidé\\.\\ Effectuez\\ ensuite\\ une\\ analyse\\ antivirus\\ complète\\ et\\ hors\\ connexion\\.$",
+        "English": "Stay offline, keep the launcher closed and follow guided cleanup. Then run a full antivirus scan and an offline scan.",
+        "Count": 0,
+        "Weight": 140
     },
     {
         "French": "Journaux : profondeur 8 niveaux ; navigateurs : 65 niveaux ; limite de 12000 dossiers par racine, caches exclus et liens/jonctions ignorés.",
@@ -68,11 +106,39 @@ $script:UiCatalog = @'
         "Weight": 138
     },
     {
+        "French": "Fermez les navigateurs et réessayez. Consultez le rapport si un contrôle reste incomplet ; cela ne signifie pas à lui seul une infection.",
+        "Pattern": "^Fermez\\ les\\ navigateurs\\ et\\ réessayez\\.\\ Consultez\\ le\\ rapport\\ si\\ un\\ contrôle\\ reste\\ incomplet\\ ;\\ cela\\ ne\\ signifie\\ pas\\ à\\ lui\\ seul\\ une\\ infection\\.$",
+        "English": "Close browsers and try again. Consult the report if a check remains incomplete; this alone does not indicate infection.",
+        "Count": 0,
+        "Weight": 137
+    },
+    {
         "French": "Activez la double authentification. Si un coffre de mots de passe était déverrouillé, remplacez aussi les mots de passe qu il contenait.",
         "Pattern": "^Activez\\ la\\ double\\ authentification\\.\\ Si\\ un\\ coffre\\ de\\ mots\\ de\\ passe\\ était\\ déverrouillé,\\ remplacez\\ aussi\\ les\\ mots\\ de\\ passe\\ qu\\ il\\ contenait\\.$",
         "English": "Enable two-factor authentication. If a password vault was unlocked, also replace the passwords it contained.",
         "Count": 0,
         "Weight": 136
+    },
+    {
+        "French": "Fermez les navigateurs et le lanceur puis réessayez. Si un fichier reste verrouillé, redémarrez Windows avant de relancer le contrôle.",
+        "Pattern": "^Fermez\\ les\\ navigateurs\\ et\\ le\\ lanceur\\ puis\\ réessayez\\.\\ Si\\ un\\ fichier\\ reste\\ verrouillé,\\ redémarrez\\ Windows\\ avant\\ de\\ relancer\\ le\\ contrôle\\.$",
+        "English": "Close browsers and the launcher, then try again. If a file stays locked, restart Windows before rechecking.",
+        "Count": 0,
+        "Weight": 134
+    },
+    {
+        "French": "Les fichiers suspects et le cache du lanceur seront traités après ce redémarrage. Ne relancez pas le jeu ni son lanceur entre-temps.",
+        "Pattern": "^Les\\ fichiers\\ suspects\\ et\\ le\\ cache\\ du\\ lanceur\\ seront\\ traités\\ après\\ ce\\ redémarrage\\.\\ Ne\\ relancez\\ pas\\ le\\ jeu\\ ni\\ son\\ lanceur\\ entre\\-temps\\.$",
+        "English": "Suspicious files and the launcher cache will be handled after the restart. Do not reopen the game or its launcher in the meantime.",
+        "Count": 0,
+        "Weight": 132
+    },
+    {
+        "French": "  Conseil : fermez les applications concernées et relancez le contrôle. Si la limite persiste, demandez de l aide avec ce rapport.",
+        "Pattern": "^\\ \\ Conseil\\ :\\ fermez\\ les\\ applications\\ concernées\\ et\\ relancez\\ le\\ contrôle\\.\\ Si\\ la\\ limite\\ persiste,\\ demandez\\ de\\ l\\ aide\\ avec\\ ce\\ rapport\\.$",
+        "English": "  Advice: close the affected applications and retry. If the limitation persists, seek help with this report.",
+        "Count": 0,
+        "Weight": 130
     },
     {
         "French": "  Disparu signifie absent au contrôle. Seules les actions marquées CONFIRMÉES attestent ce que cet outil a effectivement traité.",
@@ -124,6 +190,27 @@ $script:UiCatalog = @'
         "Weight": 125
     },
     {
+        "French": "Aucune trace actuelle trouvée dans les éléments vérifiés. Cela ne prouve pas qu aucun programme malveillant ne s est exécuté.",
+        "Pattern": "^Aucune\\ trace\\ actuelle\\ trouvée\\ dans\\ les\\ éléments\\ vérifiés\\.\\ Cela\\ ne\\ prouve\\ pas\\ qu\\ aucun\\ programme\\ malveillant\\ ne\\ s\\ est\\ exécuté\\.$",
+        "English": "No current trace was found in the checked items. This does not prove that malicious software never ran.",
+        "Count": 0,
+        "Weight": 125
+    },
+    {
+        "French": "Étape 1 : retirer l élément de démarrage suspect. Étape 2 : redémarrer Windows avant le traitement des fichiers et du cache.",
+        "Pattern": "^Étape\\ 1\\ :\\ retirer\\ l\\ élément\\ de\\ démarrage\\ suspect\\.\\ Étape\\ 2\\ :\\ redémarrer\\ Windows\\ avant\\ le\\ traitement\\ des\\ fichiers\\ et\\ du\\ cache\\.$",
+        "English": "Step 1: remove the suspicious startup entry. Step 2: restart Windows before handling files and cache.",
+        "Count": 0,
+        "Weight": 124
+    },
+    {
+        "French": "Une exposition passée a été relevée pendant cette session ; un nettoyage ne peut pas annuler un éventuel vol d identifiants.",
+        "Pattern": "^Une\\ exposition\\ passée\\ a\\ été\\ relevée\\ pendant\\ cette\\ session\\ ;\\ un\\ nettoyage\\ ne\\ peut\\ pas\\ annuler\\ un\\ éventuel\\ vol\\ d\\ identifiants\\.$",
+        "English": "Past exposure was observed during this session; cleanup cannot undo possible credential theft.",
+        "Count": 0,
+        "Weight": 124
+    },
+    {
         "French": "3. Si un coffre était déverrouillé, son contenu peut être exposé : changer seulement son mot de passe maître ne suffit pas.",
         "Pattern": "^3\\.\\ Si\\ un\\ coffre\\ était\\ déverrouillé,\\ son\\ contenu\\ peut\\ être\\ exposé\\ :\\ changer\\ seulement\\ son\\ mot\\ de\\ passe\\ maître\\ ne\\ suffit\\ pas\\.$",
         "English": "3. An unlocked password vault may have been exposed: changing only its master password is not enough.",
@@ -150,6 +237,13 @@ $script:UiCatalog = @'
         "English": "Existing connections may continue. Close and reopen your browsers; do not restart a suspicious launcher.",
         "Count": 0,
         "Weight": 122
+    },
+    {
+        "French": "Le nettoyage ne peut pas annuler un éventuel vol d identifiants : sécurisez vos comptes même après le retrait des traces.",
+        "Pattern": "^Le\\ nettoyage\\ ne\\ peut\\ pas\\ annuler\\ un\\ éventuel\\ vol\\ d\\ identifiants\\ :\\ sécurisez\\ vos\\ comptes\\ même\\ après\\ le\\ retrait\\ des\\ traces\\.$",
+        "English": "Cleanup cannot undo possible credential theft: secure your accounts even after traces are removed.",
+        "Count": 0,
+        "Weight": 121
     },
     {
         "French": "Les journaux signalent une activité passée ; les fichiers/entrées de registre indiquent des traces actuelles à examiner.",
@@ -257,6 +351,13 @@ $script:UiCatalog = @'
         "Weight": 115
     },
     {
+        "French": "Une trace historique renseigne sur une exposition passée ; elle ne démontre pas à elle seule une activité actuelle.",
+        "Pattern": "^Une\\ trace\\ historique\\ renseigne\\ sur\\ une\\ exposition\\ passée\\ ;\\ elle\\ ne\\ démontre\\ pas\\ à\\ elle\\ seule\\ une\\ activité\\ actuelle\\.$",
+        "English": "A historical trace indicates possible past exposure; it does not by itself establish current activity.",
+        "Count": 0,
+        "Weight": 115
+    },
+    {
         "French": "Aide hors connexion proposée. Aucun lancement antivirus, redémarrage ou changement réseau déclenché par cet outil.",
         "Pattern": "^Aide\\ hors\\ connexion\\ proposée\\.\\ Aucun\\ lancement\\ antivirus,\\ redémarrage\\ ou\\ changement\\ réseau\\ déclenché\\ par\\ cet\\ outil\\.$",
         "English": "Offline scan help offered. This tool started no antivirus scan, restart or network change.",
@@ -288,6 +389,13 @@ $script:UiCatalog = @'
         "French": "Si une compromission est probable, privilégiez une réinstallation propre de Windows avec une personne compétente.",
         "Pattern": "^Si\\ une\\ compromission\\ est\\ probable,\\ privilégiez\\ une\\ réinstallation\\ propre\\ de\\ Windows\\ avec\\ une\\ personne\\ compétente\\.$",
         "English": "If compromise is likely, favour a clean Windows reinstall with qualified assistance.",
+        "Count": 0,
+        "Weight": 113
+    },
+    {
+        "French": "Enregistrez vos travaux, redémarrez Windows puis relancez ce même fichier et choisissez la vérification complète.",
+        "Pattern": "^Enregistrez\\ vos\\ travaux,\\ redémarrez\\ Windows\\ puis\\ relancez\\ ce\\ même\\ fichier\\ et\\ choisissez\\ la\\ vérification\\ complète\\.$",
+        "English": "Save your work, restart Windows, then run this same file and choose the full check.",
         "Count": 0,
         "Weight": 113
     },
@@ -327,9 +435,23 @@ $script:UiCatalog = @'
         "Weight": 111
     },
     {
+        "French": "Suppression définitive du cache : vous pourrez être déconnecté et les réglages du lanceur seront réinitialisés.",
+        "Pattern": "^Suppression\\ définitive\\ du\\ cache\\ :\\ vous\\ pourrez\\ être\\ déconnecté\\ et\\ les\\ réglages\\ du\\ lanceur\\ seront\\ réinitialisés\\.$",
+        "English": "Cache deletion is permanent: you may be signed out and launcher settings will be reset.",
+        "Count": 0,
+        "Weight": 111
+    },
+    {
         "French": "Révoquez aussi les sessions et accès suspects : retirer les fichiers ne sécurise pas les comptes déjà exposés.",
         "Pattern": "^Révoquez\\ aussi\\ les\\ sessions\\ et\\ accès\\ suspects\\ :\\ retirer\\ les\\ fichiers\\ ne\\ sécurise\\ pas\\ les\\ comptes\\ déjà\\ exposés\\.$",
         "English": "Also revoke suspicious sessions and access: removing files does not secure accounts that were already exposed.",
+        "Count": 0,
+        "Weight": 110
+    },
+    {
+        "French": "La première étape ne peut pas être terminée. Aucun traitement des fichiers suspects ou du cache ne sera tenté.",
+        "Pattern": "^La\\ première\\ étape\\ ne\\ peut\\ pas\\ être\\ terminée\\.\\ Aucun\\ traitement\\ des\\ fichiers\\ suspects\\ ou\\ du\\ cache\\ ne\\ sera\\ tenté\\.$",
+        "English": "The first step could not be completed. Suspicious files and cache will be left untouched.",
         "Count": 0,
         "Weight": 110
     },
@@ -397,6 +519,13 @@ $script:UiCatalog = @'
         "Weight": 107
     },
     {
+        "French": "Le contrôle reste possible si le jeu a déjà été désinstallé. Ne le réinstallez pas pour cette vérification.",
+        "Pattern": "^Le\\ contrôle\\ reste\\ possible\\ si\\ le\\ jeu\\ a\\ déjà\\ été\\ désinstallé\\.\\ Ne\\ le\\ réinstallez\\ pas\\ pour\\ cette\\ vérification\\.$",
+        "English": "Checks still work if the game has been uninstalled. Do not reinstall it for this check.",
+        "Count": 0,
+        "Weight": 107
+    },
+    {
         "French": "Aucun journal du jeu trouvé. Les navigateurs, le registre et les temporaires ont quand même été contrôlés.",
         "Pattern": "^Aucun\\ journal\\ du\\ jeu\\ trouvé\\.\\ Les\\ navigateurs,\\ le\\ registre\\ et\\ les\\ temporaires\\ ont\\ quand\\ même\\ été\\ contrôlés\\.$",
         "English": "No game log found. Browsers, registry and temporary files were still checked.",
@@ -421,6 +550,13 @@ $script:UiCatalog = @'
         "French": "Blocage non confirmé ou demande administrateur annulée. Aucun résultat de protection ne peut être garanti.",
         "Pattern": "^Blocage\\ non\\ confirmé\\ ou\\ demande\\ administrateur\\ annulée\\.\\ Aucun\\ résultat\\ de\\ protection\\ ne\\ peut\\ être\\ garanti\\.$",
         "English": "Block not confirmed or administrator prompt cancelled. No protection result can be guaranteed.",
+        "Count": 0,
+        "Weight": 106
+    },
+    {
+        "French": "Aucune trace actuelle à retirer automatiquement. La réinitialisation du cache est proposée par précaution.",
+        "Pattern": "^Aucune\\ trace\\ actuelle\\ à\\ retirer\\ automatiquement\\.\\ La\\ réinitialisation\\ du\\ cache\\ est\\ proposée\\ par\\ précaution\\.$",
+        "English": "No current trace can be removed automatically. Resetting the cache is offered as a precaution.",
         "Count": 0,
         "Weight": 106
     },
@@ -537,6 +673,13 @@ $script:UiCatalog = @'
         "Weight": 102
     },
     {
+        "French": "Ce résultat concerne les traces connues et le périmètre vérifié, sans certification de sécurité du PC.",
+        "Pattern": "^Ce\\ résultat\\ concerne\\ les\\ traces\\ connues\\ et\\ le\\ périmètre\\ vérifié,\\ sans\\ certification\\ de\\ sécurité\\ du\\ PC\\.$",
+        "English": "This result covers known traces within the checked scope; it does not certify that the PC is secure.",
+        "Count": 0,
+        "Weight": 102
+    },
+    {
         "French": "Le dossier sera renommé et mis à l écart à côté de son emplacement actuel, sans effacement définitif.",
         "Pattern": "^Le\\ dossier\\ sera\\ renommé\\ et\\ mis\\ à\\ l\\ écart\\ à\\ côté\\ de\\ son\\ emplacement\\ actuel,\\ sans\\ effacement\\ définitif\\.$",
         "English": "The folder will be renamed and set aside beside its current location, without permanent deletion.",
@@ -554,6 +697,13 @@ $script:UiCatalog = @'
         "French": "Le format du fichier hosts n est pas pris en charge. Aucune réécriture automatique ne sera effectuée.",
         "Pattern": "^Le\\ format\\ du\\ fichier\\ hosts\\ n\\ est\\ pas\\ pris\\ en\\ charge\\.\\ Aucune\\ réécriture\\ automatique\\ ne\\ sera\\ effectuée\\.$",
         "English": "The hosts file format is not supported. The file will not be rewritten automatically.",
+        "Count": 0,
+        "Weight": 101
+    },
+    {
+        "French": "[C] Nettoyage guidé   [V] Revérifier   [R] Rapport   [D] Détails   [A] Options avancées   [Q] Quitter",
+        "Pattern": "^\\[C\\]\\ Nettoyage\\ guidé\\ \\ \\ \\[V\\]\\ Revérifier\\ \\ \\ \\[R\\]\\ Rapport\\ \\ \\ \\[D\\]\\ Détails\\ \\ \\ \\[A\\]\\ Options\\ avancées\\ \\ \\ \\[Q\\]\\ Quitter$",
+        "English": "[C] Guided cleanup   [V] Recheck   [R] Report   [D] Details   [A] Advanced options   [Q] Quit",
         "Count": 0,
         "Weight": 101
     },
@@ -579,6 +729,13 @@ $script:UiCatalog = @'
         "Weight": 100
     },
     {
+        "French": "Consultez le rapport si un contrôle reste incomplet ; cela ne signifie pas à lui seul une infection.",
+        "Pattern": "^Consultez\\ le\\ rapport\\ si\\ un\\ contrôle\\ reste\\ incomplet\\ ;\\ cela\\ ne\\ signifie\\ pas\\ à\\ lui\\ seul\\ une\\ infection\\.$",
+        "English": "Consult the report if a check remains incomplete; this alone does not indicate infection.",
+        "Count": 0,
+        "Weight": 100
+    },
+    {
         "French": "1 Tous les navigateurs (recommandé) | 2 Chrome | 3 Edge | 4 Firefox | 5 Brave | 6 Opera | 7 Vivaldi",
         "Pattern": "^1\\ Tous\\ les\\ navigateurs\\ \\(recommandé\\)\\ \\|\\ 2\\ Chrome\\ \\|\\ 3\\ Edge\\ \\|\\ 4\\ Firefox\\ \\|\\ 5\\ Brave\\ \\|\\ 6\\ Opera\\ \\|\\ 7\\ Vivaldi$",
         "English": "1 All browsers (recommended) | 2 Chrome | 3 Edge | 4 Firefox | 5 Brave | 6 Opera | 7 Vivaldi",
@@ -598,6 +755,34 @@ $script:UiCatalog = @'
         "English": "For an additional check, run an antivirus scan such as Microsoft Defender Offline yourself.",
         "Count": 0,
         "Weight": 99
+    },
+    {
+        "French": "Les données des autres applications, les navigateurs et les éléments non reconnus seront conservés.",
+        "Pattern": "^Les\\ données\\ des\\ autres\\ applications,\\ les\\ navigateurs\\ et\\ les\\ éléments\\ non\\ reconnus\\ seront\\ conservés\\.$",
+        "English": "Other applications' data, browsers and unrecognized items will be preserved.",
+        "Count": 0,
+        "Weight": 99
+    },
+    {
+        "French": "Ce retrait renomme le dossier et conserve une copie récupérable ; il ne libère pas l espace disque.",
+        "Pattern": "^Ce\\ retrait\\ renomme\\ le\\ dossier\\ et\\ conserve\\ une\\ copie\\ récupérable\\ ;\\ il\\ ne\\ libère\\ pas\\ l\\ espace\\ disque\\.$",
+        "English": "This removal renames the folder and keeps a recoverable copy; it does not free disk space.",
+        "Count": 0,
+        "Weight": 99
+    },
+    {
+        "French": "Le retrait du jeu et du lanceur sera proposé séparément. Il ne sera jamais fait sans votre accord.",
+        "Pattern": "^Le\\ retrait\\ du\\ jeu\\ et\\ du\\ lanceur\\ sera\\ proposé\\ séparément\\.\\ Il\\ ne\\ sera\\ jamais\\ fait\\ sans\\ votre\\ accord\\.$",
+        "English": "Removing the game and launcher will be offered separately. It will never happen without your consent.",
+        "Count": 0,
+        "Weight": 98
+    },
+    {
+        "French": "Une vérification incomplète ne permet pas de conclure à l absence de trace dans la zone concernée.",
+        "Pattern": "^Une\\ vérification\\ incomplète\\ ne\\ permet\\ pas\\ de\\ conclure\\ à\\ l\\ absence\\ de\\ trace\\ dans\\ la\\ zone\\ concernée\\.$",
+        "English": "An incomplete check cannot establish that the affected area contains no traces.",
+        "Count": 0,
+        "Weight": 98
     },
     {
         "French": "  Aucun fichier ou élément de registre suspect à comparer ; les journaux sont traités séparément.",
@@ -663,6 +848,13 @@ $script:UiCatalog = @'
         "Weight": 95
     },
     {
+        "French": "Consultez le rapport pour le détail ; aucun retrait non confirmé ne sera annoncé comme réussi.",
+        "Pattern": "^Consultez\\ le\\ rapport\\ pour\\ le\\ détail\\ ;\\ aucun\\ retrait\\ non\\ confirmé\\ ne\\ sera\\ annoncé\\ comme\\ réussi\\.$",
+        "English": "See the report for details; an unconfirmed removal will never be reported as successful.",
+        "Count": 0,
+        "Weight": 94
+    },
+    {
         "French": "Un précédent contrôle a relevé un marqueur NIKKE : le risque pour les comptes reste à traiter.",
         "Pattern": "^Un\\ précédent\\ contrôle\\ a\\ relevé\\ un\\ marqueur\\ NIKKE\\ :\\ le\\ risque\\ pour\\ les\\ comptes\\ reste\\ à\\ traiter\\.$",
         "English": "An earlier check found a NIKKE indicator: possible account exposure still needs attention.",
@@ -719,6 +911,20 @@ $script:UiCatalog = @'
         "Weight": 93
     },
     {
+        "French": "Consultez le détail des traces et effectuez une analyse antivirus complète et hors connexion.",
+        "Pattern": "^Consultez\\ le\\ détail\\ des\\ traces\\ et\\ effectuez\\ une\\ analyse\\ antivirus\\ complète\\ et\\ hors\\ connexion\\.$",
+        "English": "Review the trace details, then run a full antivirus scan and an offline scan.",
+        "Count": 0,
+        "Weight": 93
+    },
+    {
+        "French": "  Aucun élément suspect à comparer ; les anciennes traces restent détaillées dans le rapport.",
+        "Pattern": "^\\ \\ Aucun\\ élément\\ suspect\\ à\\ comparer\\ ;\\ les\\ anciennes\\ traces\\ restent\\ détaillées\\ dans\\ le\\ rapport\\.$",
+        "English": "  No suspicious item to compare; historical traces remain detailed in the report.",
+        "Count": 0,
+        "Weight": 93
+    },
+    {
         "French": "Aucun nettoyage ne peut être confirmé. Utilisez Sécurité Windows ou demandez une assistance.",
         "Pattern": "^Aucun\\ nettoyage\\ ne\\ peut\\ être\\ confirmé\\.\\ Utilisez\\ Sécurité\\ Windows\\ ou\\ demandez\\ une\\ assistance\\.$",
         "English": "Cleanup cannot be confirmed. Use Windows Security or seek assistance.",
@@ -747,6 +953,13 @@ $script:UiCatalog = @'
         "Weight": 92
     },
     {
+        "French": "Le retrait d un élément de démarrage suspect n a pas pu être confirmé. Consultez le rapport.",
+        "Pattern": "^Le\\ retrait\\ d\\ un\\ élément\\ de\\ démarrage\\ suspect\\ n\\ a\\ pas\\ pu\\ être\\ confirmé\\.\\ Consultez\\ le\\ rapport\\.$",
+        "English": "Removing a suspicious startup entry could not be confirmed. See the report.",
+        "Count": 0,
+        "Weight": 92
+    },
+    {
         "French": "- vous ne pourrez pas utiliser Windows ou Internet pendant l analyse (environ 15 minutes) ;",
         "Pattern": "^\\-\\ vous\\ ne\\ pourrez\\ pas\\ utiliser\\ Windows\\ ou\\ Internet\\ pendant\\ l\\ analyse\\ \\(environ\\ 15\\ minutes\\)\\ ;$",
         "English": "- you cannot use Windows or browse the Internet during the scan (about 15 minutes);",
@@ -764,6 +977,13 @@ $script:UiCatalog = @'
         "French": "Contrôles TCP/DNS locaux ; blocage des domaines dans hosts uniquement sur accord explicite.",
         "Pattern": "^Contrôles\\ TCP/DNS\\ locaux\\ ;\\ blocage\\ des\\ domaines\\ dans\\ hosts\\ uniquement\\ sur\\ accord\\ explicite\\.$",
         "English": "Local TCP/DNS checks; domain blocking in hosts only with explicit consent.",
+        "Count": 0,
+        "Weight": 91
+    },
+    {
+        "French": "Le dossier de récupération ne peut pas être préparé. Aucun fichier suspect ne sera déplacé.",
+        "Pattern": "^Le\\ dossier\\ de\\ récupération\\ ne\\ peut\\ pas\\ être\\ préparé\\.\\ Aucun\\ fichier\\ suspect\\ ne\\ sera\\ déplacé\\.$",
+        "English": "The recovery folder could not be prepared. No suspicious files will be moved.",
         "Count": 0,
         "Weight": 91
     },
@@ -810,6 +1030,20 @@ $script:UiCatalog = @'
         "Weight": 89
     },
     {
+        "French": "Un cache ne peut pas être traité automatiquement. Les autres actions restent disponibles.",
+        "Pattern": "^Un\\ cache\\ ne\\ peut\\ pas\\ être\\ traité\\ automatiquement\\.\\ Les\\ autres\\ actions\\ restent\\ disponibles\\.$",
+        "English": "A cache cannot be handled automatically. Other actions remain available.",
+        "Count": 0,
+        "Weight": 89
+    },
+    {
+        "French": "Nettoyage interrompu : aucun résultat global ne peut être confirmé. Consultez le rapport.",
+        "Pattern": "^Nettoyage\\ interrompu\\ :\\ aucun\\ résultat\\ global\\ ne\\ peut\\ être\\ confirmé\\.\\ Consultez\\ le\\ rapport\\.$",
+        "English": "Cleanup interrupted: an overall result cannot be confirmed. See the report.",
+        "Count": 0,
+        "Weight": 89
+    },
+    {
         "French": "Cela signale une exposition possible ; cela ne décrit pas l état actuel des navigateurs.",
         "Pattern": "^Cela\\ signale\\ une\\ exposition\\ possible\\ ;\\ cela\\ ne\\ décrit\\ pas\\ l\\ état\\ actuel\\ des\\ navigateurs\\.$",
         "English": "This suggests possible past exposure; it does not describe the current browser state.",
@@ -852,6 +1086,13 @@ $script:UiCatalog = @'
         "Weight": 86
     },
     {
+        "French": "Le retrait d un élément de démarrage suspect n a pas pu être confirmé. Consultez le rapport.",
+        "Pattern": "^Le\\ retrait\\ d\\ une\\ référence\\ du\\ registre\\ n\\ a\\ pas\\ pu\\ être\\ confirmé\\.\\ Consultez\\ le\\ rapport\\.$",
+        "English": "Removing a startup entry could not be confirmed. See the report.",
+        "Count": 0,
+        "Weight": 86
+    },
+    {
         "French": "- Windows redémarrera ensuite ; cela ne désactive pas définitivement votre connexion.",
         "Pattern": "^\\-\\ Windows\\ redémarrera\\ ensuite\\ ;\\ cela\\ ne\\ désactive\\ pas\\ définitivement\\ votre\\ connexion\\.$",
         "English": "- Windows will start again afterwards; your connection is not permanently disabled.",
@@ -883,6 +1124,13 @@ $script:UiCatalog = @'
         "French": "DOMAINES SIGNALÉS BLOQUÉS DANS HOSTS — ce blocage ne certifie pas que le PC est sain.",
         "Pattern": "^DOMAINES\\ SIGNALÉS\\ BLOQUÉS\\ DANS\\ HOSTS\\ —\\ ce\\ blocage\\ ne\\ certifie\\ pas\\ que\\ le\\ PC\\ est\\ sain\\.$",
         "English": "REPORTED DOMAINS BLOCKED IN HOSTS — this block does not certify a clean PC.",
+        "Count": 0,
+        "Weight": 85
+    },
+    {
+        "French": "Avant de partager ce rapport, masquez les informations personnelles dans les chemins.",
+        "Pattern": "^Avant\\ de\\ partager\\ ce\\ rapport,\\ masquez\\ les\\ informations\\ personnelles\\ dans\\ les\\ chemins\\.$",
+        "English": "Before sharing this report, redact personal information from its paths.",
         "Count": 0,
         "Weight": 85
     },
@@ -943,6 +1191,13 @@ $script:UiCatalog = @'
         "Weight": 83
     },
     {
+        "French": "Vérification des traces connues de cet incident, sans diagnostic antivirus complet.",
+        "Pattern": "^Vérification\\ des\\ traces\\ connues\\ de\\ cet\\ incident,\\ sans\\ diagnostic\\ antivirus\\ complet\\.$",
+        "English": "Checks for known traces of this incident; this is not a full antivirus assessment.",
+        "Count": 0,
+        "Weight": 83
+    },
+    {
         "French": "- le PC redémarrera et les applications seront fermées ; enregistrez vos travaux ;",
         "Pattern": "^\\-\\ le\\ PC\\ redémarrera\\ et\\ les\\ applications\\ seront\\ fermées\\ ;\\ enregistrez\\ vos\\ travaux\\ ;$",
         "English": "- the PC will restart and applications will close; save your work;",
@@ -981,6 +1236,20 @@ $script:UiCatalog = @'
         "French": "Vérification du cache incomplète : aucun nettoyage global ne peut être confirmé.",
         "Pattern": "^Vérification\\ du\\ cache\\ incomplète\\ :\\ aucun\\ nettoyage\\ global\\ ne\\ peut\\ être\\ confirmé\\.$",
         "English": "Cache check incomplete: overall cleanup cannot be confirmed.",
+        "Count": 0,
+        "Weight": 80
+    },
+    {
+        "French": "NikkeTrace ne redémarre pas le PC et ne lance rien automatiquement au démarrage.",
+        "Pattern": "^NikkeTrace\\ ne\\ redémarre\\ pas\\ le\\ PC\\ et\\ ne\\ lance\\ rien\\ automatiquement\\ au\\ démarrage\\.$",
+        "English": "NikkeTrace does not restart the PC or run anything automatically at startup.",
+        "Count": 0,
+        "Weight": 80
+    },
+    {
+        "French": "La reprise du nettoyage ne peut pas être vérifiée. Aucun fichier ne sera retiré.",
+        "Pattern": "^La\\ reprise\\ du\\ nettoyage\\ ne\\ peut\\ pas\\ être\\ vérifiée\\.\\ Aucun\\ fichier\\ ne\\ sera\\ retiré\\.$",
+        "English": "Cleanup recovery could not be verified. No files will be removed.",
         "Count": 0,
         "Weight": 80
     },
@@ -1041,6 +1310,13 @@ $script:UiCatalog = @'
         "Weight": 77
     },
     {
+        "French": "Une trace ancienne reste à examiner ; son emplacement figure dans le rapport.",
+        "Pattern": "^Une\\ trace\\ ancienne\\ reste\\ à\\ examiner\\ ;\\ son\\ emplacement\\ figure\\ dans\\ le\\ rapport\\.$",
+        "English": "A historical trace still needs review; its location is in the report.",
+        "Count": 0,
+        "Weight": 77
+    },
+    {
         "French": "     Changer le mot de passe ne révoque pas toujours une session déjà volée.",
         "Pattern": "^\\ \\ \\ \\ \\ Changer\\ le\\ mot\\ de\\ passe\\ ne\\ révoque\\ pas\\ toujours\\ une\\ session\\ déjà\\ volée\\.$",
         "English": "     Changing a password does not always revoke a stolen session.",
@@ -1058,6 +1334,13 @@ $script:UiCatalog = @'
         "French": "Le chemin hosts est redirigé. L outil refuse de le modifier automatiquement.",
         "Pattern": "^Le\\ chemin\\ hosts\\ est\\ redirigé\\.\\ L\\ outil\\ refuse\\ de\\ le\\ modifier\\ automatiquement\\.$",
         "English": "The hosts path is redirected. The tool will not modify it automatically.",
+        "Count": 0,
+        "Weight": 76
+    },
+    {
+        "French": "Redémarrez Windows puis relancez le même fichier pour terminer le nettoyage.",
+        "Pattern": "^Redémarrez\\ Windows\\ puis\\ relancez\\ le\\ même\\ fichier\\ pour\\ terminer\\ le\\ nettoyage\\.$",
+        "English": "Restart Windows, then run the same file to finish cleanup.",
         "Count": 0,
         "Weight": 76
     },
@@ -1118,6 +1401,13 @@ $script:UiCatalog = @'
         "Weight": 75
     },
     {
+        "French": "Élément de démarrage suspect retiré. Redémarrage nécessaire pour continuer.",
+        "Pattern": "^Élément\\ de\\ démarrage\\ suspect\\ retiré\\.\\ Redémarrage\\ nécessaire\\ pour\\ continuer\\.$",
+        "English": "Suspicious startup entry removed. A restart is needed to continue.",
+        "Count": 0,
+        "Weight": 75
+    },
+    {
         "French": "Bilan non enregistré : gardez cette fenêtre ouverte pour lire le résultat.",
         "Pattern": "^Bilan\\ non\\ enregistré\\ :\\ gardez\\ cette\\ fenêtre\\ ouverte\\ pour\\ lire\\ le\\ résultat\\.$",
         "English": "Report could not be saved: keep this window open to read the result.",
@@ -1156,6 +1446,13 @@ $script:UiCatalog = @'
         "French": "Domaine signalé bloqué dans hosts : ce blocage ne prouve pas une infection",
         "Pattern": "^Domaine\\ signalé\\ bloqué\\ dans\\ hosts\\ :\\ ce\\ blocage\\ ne\\ prouve\\ pas\\ une\\ infection$",
         "English": "Reported domain blocked in hosts: the block does not establish infection",
+        "Count": 0,
+        "Weight": 74
+    },
+    {
+        "French": "Aucun élément connu ne peut être nettoyé automatiquement pour ce résultat.",
+        "Pattern": "^Aucun\\ élément\\ connu\\ ne\\ peut\\ être\\ nettoyé\\ automatiquement\\ pour\\ ce\\ résultat\\.$",
+        "English": "No known item can be cleaned automatically for this result.",
         "Count": 0,
         "Weight": 74
     },
@@ -1258,6 +1555,20 @@ $script:UiCatalog = @'
         "Weight": 69
     },
     {
+        "French": "Traces actuelles : {0} ; historiques : {1} ; autres éléments à examiner : {2}.",
+        "Pattern": "^Traces\\ actuelles\\ :\\ (?<v0>.*?)\\ ;\\ historiques\\ :\\ (?<v1>.*?)\\ ;\\ autres\\ éléments\\ à\\ examiner\\ :\\ (?<v2>.*?)\\.$",
+        "English": "Current traces: {0}; historical: {1}; other items needing review: {2}.",
+        "Count": 3,
+        "Weight": 69
+    },
+    {
+        "French": "Fichier téléchargé à examiner : taille signalée, contenu non confirmé",
+        "Pattern": "^Fichier\\ téléchargé\\ à\\ examiner\\ :\\ taille\\ signalée,\\ contenu\\ non\\ confirmé$",
+        "English": "Downloaded file needs review: reported size, content unconfirmed",
+        "Count": 0,
+        "Weight": 69
+    },
+    {
         "French": "  Journaux NIKKE : aucun marqueur connu dans $($Snapshot.LogsRead) journal/journaux lu(s)",
         "Pattern": "^\\ \\ Journaux\\ NIKKE\\ :\\ aucun\\ marqueur\\ connu\\ dans\\ (?<v0>.*?)\\ journal/journaux\\ lu\\(s\\)$",
         "English": "  NIKKE logs: no known indicator in {0} readable log(s)",
@@ -1303,6 +1614,13 @@ $script:UiCatalog = @'
         "French": "Les autres indices restent à examiner avec une personne compétente.",
         "Pattern": "^Les\\ autres\\ indices\\ restent\\ à\\ examiner\\ avec\\ une\\ personne\\ compétente\\.$",
         "English": "Other indicators still need investigation with qualified assistance.",
+        "Count": 0,
+        "Weight": 67
+    },
+    {
+        "French": "VÉRIFICATION PARTIELLE — AUCUNE TRACE TROUVÉE DANS LES ÉLÉMENTS LUS",
+        "Pattern": "^VÉRIFICATION\\ PARTIELLE\\ —\\ AUCUNE\\ TRACE\\ TROUVÉE\\ DANS\\ LES\\ ÉLÉMENTS\\ LUS$",
+        "English": "PARTIAL CHECK — NO TRACES FOUND IN THE ITEMS READ",
         "Count": 0,
         "Weight": 67
     },
@@ -1384,6 +1702,13 @@ $script:UiCatalog = @'
         "Weight": 64
     },
     {
+        "French": "Un fichier suspect n a pas pu être retiré. Consultez le rapport.",
+        "Pattern": "^Un\\ fichier\\ suspect\\ n\\ a\\ pas\\ pu\\ être\\ retiré\\.\\ Consultez\\ le\\ rapport\\.$",
+        "English": "A suspicious file could not be removed. See the report.",
+        "Count": 0,
+        "Weight": 64
+    },
+    {
         "French": "  Résumé : $removed disparu(s), $remaining encore à examiner, $unknown non vérifiable(s).",
         "Pattern": "^\\ \\ Résumé\\ :\\ (?<v0>.*?)\\ disparu\\(s\\),\\ (?<v1>.*?)\\ encore\\ à\\ examiner,\\ (?<v2>.*?)\\ non\\ vérifiable\\(s\\)\\.$",
         "English": "  Summary: {0} missing, {1} still to investigate, {2} unverifiable.",
@@ -1457,6 +1782,13 @@ $script:UiCatalog = @'
         "French": "TRACES D UNE EXPOSITION PASSÉE TROUVÉES — protéger les comptes",
         "Pattern": "^TRACES\\ D\\ UNE\\ EXPOSITION\\ PASSÉE\\ TROUVÉES\\ —\\ protéger\\ les\\ comptes$",
         "English": "TRACES OF PAST EXPOSURE FOUND — secure your accounts",
+        "Count": 0,
+        "Weight": 62
+    },
+    {
+        "French": "Retrait de l installation non confirmé : consultez le rapport.",
+        "Pattern": "^Retrait\\ de\\ l\\ installation\\ non\\ confirmé\\ :\\ consultez\\ le\\ rapport\\.$",
+        "English": "Installation removal unconfirmed: see the report.",
         "Count": 0,
         "Weight": 62
     },
@@ -1545,6 +1877,13 @@ $script:UiCatalog = @'
         "Weight": 59
     },
     {
+        "French": "Redémarrage Windows confirmé : le nettoyage peut continuer.",
+        "Pattern": "^Redémarrage\\ Windows\\ confirmé\\ :\\ le\\ nettoyage\\ peut\\ continuer\\.$",
+        "English": "Windows restart confirmed: cleanup can continue.",
+        "Count": 0,
+        "Weight": 59
+    },
+    {
         "French": "Coller le chemin du dossier NIKKE/Launcher ou de debug.log",
         "Pattern": "^Coller\\ le\\ chemin\\ du\\ dossier\\ NIKKE/Launcher\\ ou\\ de\\ debug\\.log$",
         "English": "Paste the NIKKE/Launcher folder path or the debug.log path",
@@ -1569,6 +1908,27 @@ $script:UiCatalog = @'
         "French": "Rapport sauvegardé hors du cache requis avant suppression.",
         "Pattern": "^Rapport\\ sauvegardé\\ hors\\ du\\ cache\\ requis\\ avant\\ suppression\\.$",
         "English": "A report saved outside the cache is required before deletion.",
+        "Count": 0,
+        "Weight": 58
+    },
+    {
+        "French": "Rapport non sauvegardé : aucun nettoyage ne sera effectué.",
+        "Pattern": "^Rapport\\ non\\ sauvegardé\\ :\\ aucun\\ nettoyage\\ ne\\ sera\\ effectué\\.$",
+        "English": "Report not saved: no cleanup will be performed.",
+        "Count": 0,
+        "Weight": 58
+    },
+    {
+        "French": "Actions confirmées : {0} ; actions échouées ou partielles : {1}.",
+        "Pattern": "^Actions\\ confirmées\\ :\\ (?<v0>.*?)\\ ;\\ actions\\ échouées\\ ou\\ partielles\\ :\\ (?<v1>.*?)\\.$",
+        "English": "Confirmed actions: {0}; failed or partial actions: {1}.",
+        "Count": 2,
+        "Weight": 58
+    },
+    {
+        "French": "Ouvrez ce fichier dans le Bloc-notes pour lire le rapport.",
+        "Pattern": "^Ouvrez\\ ce\\ fichier\\ dans\\ le\\ Bloc\\-notes\\ pour\\ lire\\ le\\ rapport\\.$",
+        "English": "Open this file in Notepad to read the report.",
         "Count": 0,
         "Weight": 58
     },
@@ -1643,6 +2003,27 @@ $script:UiCatalog = @'
         "Weight": 56
     },
     {
+        "French": "1  Vérification complète et nettoyage guidé (recommandé)",
+        "Pattern": "^1\\ \\ Vérification\\ complète\\ et\\ nettoyage\\ guidé\\ \\(recommandé\\)$",
+        "English": "1  Full check and guided cleanup (recommended)",
+        "Count": 0,
+        "Weight": 56
+    },
+    {
+        "French": "Retirer aussi cette installation du jeu et son lanceur ?",
+        "Pattern": "^Retirer\\ aussi\\ cette\\ installation\\ du\\ jeu\\ et\\ son\\ lanceur\\ \\?$",
+        "English": "Also remove this game installation and its launcher?",
+        "Count": 0,
+        "Weight": 56
+    },
+    {
+        "French": "Les contrôles disponibles ne permettent pas de conclure.",
+        "Pattern": "^Les\\ contrôles\\ disponibles\\ ne\\ permettent\\ pas\\ de\\ conclure\\.$",
+        "English": "The available checks do not allow a conclusion.",
+        "Count": 0,
+        "Weight": 56
+    },
+    {
         "French": "  $($Snapshot.Issues.Count) limite(s) de vérification — D pour lire les détails.",
         "Pattern": "^\\ \\ (?<v0>.*?)\\ limite\\(s\\)\\ de\\ vérification\\ —\\ D\\ pour\\ lire\\ les\\ détails\\.$",
         "English": "  {0} verification limitation(s) — press D for details.",
@@ -1688,6 +2069,13 @@ $script:UiCatalog = @'
         "French": "TRACES ENCORE PRÉSENTES OU À EXAMINER DANS LES CACHES :",
         "Pattern": "^TRACES\\ ENCORE\\ PRÉSENTES\\ OU\\ À\\ EXAMINER\\ DANS\\ LES\\ CACHES\\ :$",
         "English": "TRACES STILL PRESENT OR NEEDING REVIEW IN THE CACHES:",
+        "Count": 0,
+        "Weight": 55
+    },
+    {
+        "French": "Appuyez sur Entrée pour fermer, puis redémarrez Windows",
+        "Pattern": "^Appuyez\\ sur\\ Entrée\\ pour\\ fermer,\\ puis\\ redémarrez\\ Windows$",
+        "English": "Press Enter to close, then restart Windows",
         "Count": 0,
         "Weight": 55
     },
@@ -1923,6 +2311,13 @@ $script:UiCatalog = @'
         "Weight": 51
     },
     {
+        "French": "Fichier suspect à isoler avec copie de récupération",
+        "Pattern": "^Fichier\\ suspect\\ à\\ isoler\\ avec\\ copie\\ de\\ récupération$",
+        "English": "Suspicious file to isolate with a recovery copy",
+        "Count": 0,
+        "Weight": 51
+    },
+    {
         "French": "Journaux du jeu : non consultés dans cette option.",
         "Pattern": "^Journaux\\ du\\ jeu\\ :\\ non\\ consultés\\ dans\\ cette\\ option\\.$",
         "English": "Game logs: not checked by this option.",
@@ -1954,6 +2349,13 @@ $script:UiCatalog = @'
         "French": "Blocage des domaines refusé : aucune modification.",
         "Pattern": "^Blocage\\ des\\ domaines\\ refusé\\ :\\ aucune\\ modification\\.$",
         "English": "Domain block declined: no changes made.",
+        "Count": 0,
+        "Weight": 50
+    },
+    {
+        "French": "TRACES TROUVÉES — CHEMINS COMPLETS DANS LE RAPPORT",
+        "Pattern": "^TRACES\\ TROUVÉES\\ —\\ CHEMINS\\ COMPLETS\\ DANS\\ LE\\ RAPPORT$",
+        "English": "TRACES FOUND — FULL LOCATIONS IN THE REPORT",
         "Count": 0,
         "Weight": 50
     },
@@ -2007,6 +2409,34 @@ $script:UiCatalog = @'
         "Weight": 49
     },
     {
+        "French": "Suppression du cache incomplète ou non confirmée.",
+        "Pattern": "^Suppression\\ du\\ cache\\ incomplète\\ ou\\ non\\ confirmée\\.$",
+        "English": "Cache deletion incomplete or unconfirmed.",
+        "Count": 0,
+        "Weight": 49
+    },
+    {
+        "French": "TRACES HISTORIQUES — EXPOSITION PASSÉE À EXAMINER",
+        "Pattern": "^TRACES\\ HISTORIQUES\\ —\\ EXPOSITION\\ PASSÉE\\ À\\ EXAMINER$",
+        "English": "HISTORICAL TRACES — REVIEW PAST EXPOSURE",
+        "Count": 0,
+        "Weight": 49
+    },
+    {
+        "French": "6  Aide pour une analyse antivirus hors connexion",
+        "Pattern": "^6\\ \\ Aide\\ pour\\ une\\ analyse\\ antivirus\\ hors\\ connexion$",
+        "English": "6  Offline antivirus scan guidance",
+        "Count": 0,
+        "Weight": 49
+    },
+    {
+        "French": "Dossier du jeu ou de debug.log [Entrée = annuler]",
+        "Pattern": "^Dossier\\ du\\ jeu\\ ou\\ de\\ debug\\.log\\ \\[Entrée\\ =\\ annuler\\]$",
+        "English": "Game or debug.log folder [Enter = cancel]",
+        "Count": 0,
+        "Weight": 49
+    },
+    {
         "French": "À FAIRE PAR PRÉCAUTION DEPUIS UN APPAREIL SAIN :",
         "Pattern": "^À\\ FAIRE\\ PAR\\ PRÉCAUTION\\ DEPUIS\\ UN\\ APPAREIL\\ SAIN\\ :$",
         "English": "PRECAUTIONS TO TAKE FROM A CLEAN DEVICE:",
@@ -2038,6 +2468,20 @@ $script:UiCatalog = @'
         "French": "Avant de choisir : fermez NIKKE et son launcher.",
         "Pattern": "^Avant\\ de\\ choisir\\ :\\ fermez\\ NIKKE\\ et\\ son\\ launcher\\.$",
         "English": "Before choosing: close NIKKE and its launcher.",
+        "Count": 0,
+        "Weight": 48
+    },
+    {
+        "French": "RETRAIT NON CONFIRMÉ — VÉRIFICATIONS NÉCESSAIRES",
+        "Pattern": "^RETRAIT\\ NON\\ CONFIRMÉ\\ —\\ VÉRIFICATIONS\\ NÉCESSAIRES$",
+        "English": "REMOVAL UNCONFIRMED — FURTHER CHECKS NEEDED",
+        "Count": 0,
+        "Weight": 48
+    },
+    {
+        "French": "3  Indiquer un profil de navigateur personnalisé",
+        "Pattern": "^3\\ \\ Indiquer\\ un\\ profil\\ de\\ navigateur\\ personnalisé$",
+        "English": "3  Specify a custom browser profile",
         "Count": 0,
         "Weight": 48
     },
@@ -2105,6 +2549,13 @@ $script:UiCatalog = @'
         "Weight": 47
     },
     {
+        "French": "NETTOYAGE GUIDÉ — JEU INSTALLÉ OU DÉJÀ SUPPRIMÉ",
+        "Pattern": "^NETTOYAGE\\ GUIDÉ\\ —\\ JEU\\ INSTALLÉ\\ OU\\ DÉJÀ\\ SUPPRIMÉ$",
+        "English": "GUIDED CLEANUP — GAME INSTALLED OR ALREADY REMOVED",
+        "Count": 0,
+        "Weight": 47
+    },
+    {
         "French": "3  Voir les conseils pour protéger mes comptes",
         "Pattern": "^3\\ \\ Voir\\ les\\ conseils\\ pour\\ protéger\\ mes\\ comptes$",
         "English": "3  Account protection advice",
@@ -2161,6 +2612,13 @@ $script:UiCatalog = @'
         "Weight": 46
     },
     {
+        "French": "Cache du lanceur supprimé ; absence confirmée.",
+        "Pattern": "^Cache\\ du\\ lanceur\\ supprimé\\ ;\\ absence\\ confirmée\\.$",
+        "English": "Launcher cache deleted; absence confirmed.",
+        "Count": 0,
+        "Weight": 46
+    },
+    {
         "French": "================ RÉSULTAT — $title ================",
         "Pattern": "^================\\ RÉSULTAT\\ —\\ (?<v0>.*?)\\ ================$",
         "English": "================ RESULT — {0} ================",
@@ -2179,6 +2637,13 @@ $script:UiCatalog = @'
         "Pattern": "^Recherche\\ de\\ debug\\.log\\ et\\ de\\ ses\\ rotations\\ :\\ (?<v0>.*?)$",
         "English": "Searching debug.log and rotated logs: {0}",
         "Count": 1,
+        "Weight": 45
+    },
+    {
+        "French": "2  Indiquer le dossier du jeu ou de debug.log",
+        "Pattern": "^2\\ \\ Indiquer\\ le\\ dossier\\ du\\ jeu\\ ou\\ de\\ debug\\.log$",
+        "English": "2  Specify the game or debug.log folder",
+        "Count": 0,
         "Weight": 45
     },
     {
@@ -2224,6 +2689,20 @@ $script:UiCatalog = @'
         "Weight": 44
     },
     {
+        "French": "DÉTAILS TECHNIQUES ET HISTORIQUE DES ACTIONS",
+        "Pattern": "^DÉTAILS\\ TECHNIQUES\\ ET\\ HISTORIQUE\\ DES\\ ACTIONS$",
+        "English": "TECHNICAL DETAILS AND ACTION HISTORY",
+        "Count": 0,
+        "Weight": 44
+    },
+    {
+        "French": "Référence du registre retirée et sauvegardée",
+        "Pattern": "^Référence\\ du\\ registre\\ retirée\\ et\\ sauvegardée$",
+        "English": "Startup entry removed and backed up",
+        "Count": 0,
+        "Weight": 44
+    },
+    {
         "French": "    - $($Rows.Count - 3) autre(s) élément(s) dans les détails",
         "Pattern": "^\\ \\ \\ \\ \\-\\ (?<v0>.*?)\\ autre\\(s\\)\\ élément\\(s\\)\\ dans\\ les\\ détails$",
         "English": "    {0} more item(s) in the details",
@@ -2262,6 +2741,13 @@ $script:UiCatalog = @'
         "French": "Supprimer définitivement ces caches NIKKE ?",
         "Pattern": "^Supprimer\\ définitivement\\ ces\\ caches\\ NIKKE\\ \\?$",
         "English": "Permanently delete these NIKKE launcher caches?",
+        "Count": 0,
+        "Weight": 43
+    },
+    {
+        "French": "5  Bloquer les domaines signalés dans hosts",
+        "Pattern": "^5\\ \\ Bloquer\\ les\\ domaines\\ signalés\\ dans\\ hosts$",
+        "English": "5  Block reported websites",
         "Count": 0,
         "Weight": 43
     },
@@ -2325,6 +2811,20 @@ $script:UiCatalog = @'
         "French": "Liste des processus vide ou indisponible.",
         "Pattern": "^Liste\\ des\\ processus\\ vide\\ ou\\ indisponible\\.$",
         "English": "Process list empty or unavailable.",
+        "Count": 0,
+        "Weight": 41
+    },
+    {
+        "French": "Nettoyage refusé : aucun élément modifié.",
+        "Pattern": "^Nettoyage\\ refusé\\ :\\ aucun\\ élément\\ modifié\\.$",
+        "English": "Cleanup declined: nothing changed.",
+        "Count": 0,
+        "Weight": 41
+    },
+    {
+        "French": "Fichier suspect isolé ; retrait confirmé.",
+        "Pattern": "^Fichier\\ suspect\\ isolé\\ ;\\ retrait\\ confirmé\\.$",
+        "English": "Suspicious file isolated; removal confirmed.",
         "Count": 0,
         "Weight": 41
     },
@@ -2434,6 +2934,13 @@ $script:UiCatalog = @'
         "Weight": 39
     },
     {
+        "French": "Élément de démarrage lié à cet incident",
+        "Pattern": "^Élément\\ de\\ démarrage\\ lié\\ à\\ cet\\ incident$",
+        "English": "Startup entry linked to this incident",
+        "Count": 0,
+        "Weight": 39
+    },
+    {
         "French": "0  Terminer et afficher le bilan final",
         "Pattern": "^0\\ \\ Terminer\\ et\\ afficher\\ le\\ bilan\\ final$",
         "English": "0  Finish and show the final report",
@@ -2458,6 +2965,41 @@ $script:UiCatalog = @'
         "French": "SUPPRESSION FACULTATIVE DU CACHE NIKKE",
         "Pattern": "^SUPPRESSION\\ FACULTATIVE\\ DU\\ CACHE\\ NIKKE$",
         "English": "OPTIONAL NIKKE LAUNCHER CACHE DELETION",
+        "Count": 0,
+        "Weight": 38
+    },
+    {
+        "French": "Élément de démarrage suspect à retirer",
+        "Pattern": "^Élément\\ de\\ démarrage\\ suspect\\ à\\ retirer$",
+        "English": "Suspicious startup entry to remove",
+        "Count": 0,
+        "Weight": 38
+    },
+    {
+        "French": "Contrôles terminés : {0} ; incomplets : {1}.",
+        "Pattern": "^Contrôles\\ terminés\\ :\\ (?<v0>.*?)\\ ;\\ incomplets\\ :\\ (?<v1>.*?)\\.$",
+        "English": "Completed checks: {0}; incomplete: {1}.",
+        "Count": 2,
+        "Weight": 38
+    },
+    {
+        "French": "4  Conseils pour sécuriser les comptes",
+        "Pattern": "^4\\ \\ Conseils\\ pour\\ sécuriser\\ les\\ comptes$",
+        "English": "4  Account security guidance",
+        "Count": 0,
+        "Weight": 38
+    },
+    {
+        "French": "Installation retirée du chemin initial",
+        "Pattern": "^Installation\\ retirée\\ du\\ chemin\\ initial$",
+        "English": "Installation removed from its original location",
+        "Count": 0,
+        "Weight": 38
+    },
+    {
+        "French": "Retrait de l installation non confirmé",
+        "Pattern": "^Retrait\\ de\\ l\\ installation\\ non\\ confirmé$",
+        "English": "Installation removal unconfirmed",
         "Count": 0,
         "Weight": 38
     },
@@ -2490,6 +3032,27 @@ $script:UiCatalog = @'
         "Weight": 37
     },
     {
+        "French": "Caches du lanceur à réinitialiser : {0}.",
+        "Pattern": "^Caches\\ du\\ lanceur\\ à\\ réinitialiser\\ :\\ (?<v0>.*?)\\.$",
+        "English": "Launcher caches to reset: {0}.",
+        "Count": 1,
+        "Weight": 37
+    },
+    {
+        "French": "Rapport sauvegardé avant nettoyage : {0}",
+        "Pattern": "^Rapport\\ sauvegardé\\ avant\\ nettoyage\\ :\\ (?<v0>.*?)$",
+        "English": "Report saved before cleanup: {0}",
+        "Count": 1,
+        "Weight": 37
+    },
+    {
+        "French": "Installation NIKKE encore présente : {0}",
+        "Pattern": "^Installation\\ NIKKE\\ encore\\ présente\\ :\\ (?<v0>.*?)$",
+        "English": "NIKKE installation still present: {0}",
+        "Count": 1,
+        "Weight": 37
+    },
+    {
         "French": "3  Contrôle d'un navigateur au choix",
         "Pattern": "^3\\ \\ Contrôle\\ d'un\\ navigateur\\ au\\ choix$",
         "English": "3  Check a browser of your choice",
@@ -2511,9 +3074,9 @@ $script:UiCatalog = @'
         "Weight": 36
     },
     {
-        "French": "NIKKE assistance 2.7 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
-        "Pattern": "^NIKKE\\ assistance\\ 2\\.7\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
-        "English": "NIKKE assistance 2.7 — {0} — Mode: {1} / {2}",
+        "French": "NIKKE assistance 3.0 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
+        "Pattern": "^NIKKE\\ assistance\\ 3\\.0\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
+        "English": "NIKKE assistance 3.0 — {0} — Mode: {1} / {2}",
         "Count": 3,
         "Weight": 36
     },
@@ -2521,6 +3084,20 @@ $script:UiCatalog = @'
         "French": "TRACES SUSPECTES ACTUELLES DÉTECTÉES",
         "Pattern": "^TRACES\\ SUSPECTES\\ ACTUELLES\\ DÉTECTÉES$",
         "English": "CURRENT SUSPICIOUS INDICATORS DETECTED",
+        "Count": 0,
+        "Weight": 36
+    },
+    {
+        "French": "Trace historique liée à cet incident",
+        "Pattern": "^Trace\\ historique\\ liée\\ à\\ cet\\ incident$",
+        "English": "Historical trace linked to this incident",
+        "Count": 0,
+        "Weight": 36
+    },
+    {
+        "French": "Nettoyage interrompu ou non confirmé",
+        "Pattern": "^Nettoyage\\ interrompu\\ ou\\ non\\ confirmé$",
+        "English": "Cleanup interrupted or unconfirmed",
         "Count": 0,
         "Weight": 36
     },
@@ -2542,6 +3119,13 @@ $script:UiCatalog = @'
         "French": "Dossier du profil CEF indisponible.",
         "Pattern": "^Dossier\\ du\\ profil\\ CEF\\ indisponible\\.$",
         "English": "The CEF profile location is unavailable.",
+        "Count": 0,
+        "Weight": 35
+    },
+    {
+        "French": "NETTOYAGE EN ATTENTE DU REDÉMARRAGE",
+        "Pattern": "^NETTOYAGE\\ EN\\ ATTENTE\\ DU\\ REDÉMARRAGE$",
+        "English": "CLEANUP WAITING FOR A RESTART",
         "Count": 0,
         "Weight": 35
     },
@@ -2609,6 +3193,41 @@ $script:UiCatalog = @'
         "Weight": 34
     },
     {
+        "French": "NIKKETRACE — VERSION 3.0 — WINDOWS",
+        "Pattern": "^NIKKETRACE\\ —\\ VERSION\\ 3\\.0\\ —\\ WINDOWS$",
+        "English": "NIKKETRACE — VERSION 3.0 — WINDOWS",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
+        "French": "Fichier suspect lié à cet incident",
+        "Pattern": "^Fichier\\ suspect\\ lié\\ à\\ cet\\ incident$",
+        "English": "Suspicious file linked to this incident",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
+        "French": "1  Vérifier un navigateur au choix",
+        "Pattern": "^1\\ \\ Vérifier\\ un\\ navigateur\\ au\\ choix$",
+        "English": "1  Check a browser of your choice",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
+        "French": "Choisissez une lettre de la liste.",
+        "Pattern": "^Choisissez\\ une\\ lettre\\ de\\ la\\ liste\\.$",
+        "English": "Choose a letter from the list.",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
+        "French": "Suppression du cache non confirmée",
+        "Pattern": "^Suppression\\ du\\ cache\\ non\\ confirmée$",
+        "English": "Cache deletion unconfirmed",
+        "Count": 0,
+        "Weight": 34
+    },
+    {
         "French": "Choisissez un numéro de la liste.",
         "Pattern": "^Choisissez\\ un\\ numéro\\ de\\ la\\ liste\\.$",
         "English": "Choose a number from the menu.",
@@ -2658,6 +3277,13 @@ $script:UiCatalog = @'
         "Weight": 33
     },
     {
+        "French": "NETTOYAGE PARTIEL OU NON CONFIRMÉ",
+        "Pattern": "^NETTOYAGE\\ PARTIEL\\ OU\\ NON\\ CONFIRMÉ$",
+        "English": "CLEANUP PARTIAL OR UNCONFIRMED",
+        "Count": 0,
+        "Weight": 33
+    },
+    {
         "French": "  $Label : aucun marqueur connu trouvé",
         "Pattern": "^\\ \\ (?<v0>.*?)\\ :\\ aucun\\ marqueur\\ connu\\ trouvé$",
         "English": "  {0}: no known indicator found",
@@ -2676,6 +3302,20 @@ $script:UiCatalog = @'
         "Pattern": "^NON\\ TRAITÉ\\ OU\\ NON\\ CONFIRMÉ\\ :\\ (?<v0>.*?)\\ —\\ (?<v1>.*?)$",
         "English": "NOT HANDLED OR NOT CONFIRMED: {0} — {1}",
         "Count": 2,
+        "Weight": 32
+    },
+    {
+        "French": "Retrait du registre non confirmé",
+        "Pattern": "^Retrait\\ du\\ registre\\ non\\ confirmé$",
+        "English": "Startup entry removal unconfirmed",
+        "Count": 0,
+        "Weight": 32
+    },
+    {
+        "French": "{0} [O/N/R = rapport, Entrée = Non]",
+        "Pattern": "^(?<v0>.*?)\\ \\[O/N/R\\ =\\ rapport,\\ Entrée\\ =\\ Non\\]$",
+        "English": "{0} [Y/N/R = report, Enter = No]",
+        "Count": 1,
         "Weight": 32
     },
     {
@@ -2728,9 +3368,16 @@ $script:UiCatalog = @'
         "Weight": 31
     },
     {
-        "French": " NikkeTrace — FR — VERSION 2.7",
-        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.7$",
-        "English": " NikkeTrace — EN — VERSION 2.7",
+        "French": "Retrait du fichier non confirmé",
+        "Pattern": "^Retrait\\ du\\ fichier\\ non\\ confirmé$",
+        "English": "File removal unconfirmed",
+        "Count": 0,
+        "Weight": 31
+    },
+    {
+        "French": " NikkeTrace — FR — VERSION 3.0",
+        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.0$",
+        "English": " NikkeTrace — EN — VERSION 3.0",
         "Count": 0,
         "Weight": 30
     },
@@ -2770,9 +3417,44 @@ $script:UiCatalog = @'
         "Weight": 30
     },
     {
-        "French": "NikkeTrace — FR — VERSION 2.7",
-        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 2\\.7$",
-        "English": "NikkeTrace — EN — VERSION 2.7",
+        "French": "Effectuer ce nettoyage guidé ?",
+        "Pattern": "^Effectuer\\ ce\\ nettoyage\\ guidé\\ \\?$",
+        "English": "Perform this guided cleanup?",
+        "Count": 0,
+        "Weight": 30
+    },
+    {
+        "French": "Votre choix [Entrée = Quitter]",
+        "Pattern": "^Votre\\ choix\\ \\[Entrée\\ =\\ Quitter\\]$",
+        "English": "Your choice [Enter = Quit]",
+        "Count": 0,
+        "Weight": 30
+    },
+    {
+        "French": "NIKKETRACE 3.0 — RAPPORT PRIVÉ",
+        "Pattern": "^NIKKETRACE\\ 3\\.0\\ —\\ RAPPORT\\ PRIVÉ$",
+        "English": "NIKKETRACE 3.0 — PRIVATE REPORT",
+        "Count": 0,
+        "Weight": 30
+    },
+    {
+        "French": "Revérification après nettoyage",
+        "Pattern": "^Revérification\\ après\\ nettoyage$",
+        "English": "Post-cleanup recheck",
+        "Count": 0,
+        "Weight": 30
+    },
+    {
+        "French": "Marqueur de cache : {0} — {1}",
+        "Pattern": "^Marqueur\\ de\\ cache\\ :\\ (?<v0>.*?)\\ —\\ (?<v1>.*?)$",
+        "English": "Cache marker: {0} — {1}",
+        "Count": 2,
+        "Weight": 29
+    },
+    {
+        "French": "NikkeTrace — FR — VERSION 3.0",
+        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.0$",
+        "English": "NikkeTrace — EN — VERSION 3.0",
         "Count": 0,
         "Weight": 29
     },
@@ -2847,6 +3529,13 @@ $script:UiCatalog = @'
         "Weight": 29
     },
     {
+        "French": "5  Bloquer les sites signalés",
+        "Pattern": "^5\\ \\ Bloquer\\ les\\ sites\\ signalés$",
+        "English": "5  Block reported websites",
+        "Count": 0,
+        "Weight": 29
+    },
+    {
         "French": "    Emplacement recherché : $path",
         "Pattern": "^\\ \\ \\ \\ Emplacement\\ recherché\\ :\\ (?<v0>.*?)$",
         "English": "    Location checked: {0}",
@@ -2857,6 +3546,20 @@ $script:UiCatalog = @'
         "French": "Cet outil nécessite Windows.",
         "Pattern": "^Cet\\ outil\\ nécessite\\ Windows\\.$",
         "English": "This tool requires Windows.",
+        "Count": 0,
+        "Weight": 28
+    },
+    {
+        "French": "Fichier isolé en quarantaine",
+        "Pattern": "^Fichier\\ isolé\\ en\\ quarantaine$",
+        "English": "Suspicious file isolated with a recovery copy",
+        "Count": 0,
+        "Weight": 28
+    },
+    {
+        "French": "Revérification non confirmée",
+        "Pattern": "^Revérification\\ non\\ confirmée$",
+        "English": "Recheck unconfirmed",
         "Count": 0,
         "Weight": 28
     },
@@ -2893,6 +3596,20 @@ $script:UiCatalog = @'
         "Pattern": "^Échec\\ de\\ relecture\\ hosts\\ :\\ (?<v0>.*?)$",
         "English": "Failed to read hosts back: {0}",
         "Count": 1,
+        "Weight": 27
+    },
+    {
+        "French": "AUCUNE TRACE CONNUE TROUVÉE",
+        "Pattern": "^AUCUNE\\ TRACE\\ CONNUE\\ TROUVÉE$",
+        "English": "NO KNOWN TRACES FOUND",
+        "Count": 0,
+        "Weight": 27
+    },
+    {
+        "French": "RÉSULTAT DE LA VÉRIFICATION",
+        "Pattern": "^RÉSULTAT\\ DE\\ LA\\ VÉRIFICATION$",
+        "English": "CHECK RESULT",
+        "Count": 0,
         "Weight": 27
     },
     {
@@ -2945,6 +3662,13 @@ $script:UiCatalog = @'
         "Weight": 26
     },
     {
+        "French": "TRACES ACTUELLES À TRAITER",
+        "Pattern": "^TRACES\\ ACTUELLES\\ À\\ TRAITER$",
+        "English": "CURRENT TRACES TO ADDRESS",
+        "Count": 0,
+        "Weight": 26
+    },
+    {
         "French": "  $Label : $($Rows.Count) trace(s) à examiner",
         "Pattern": "^\\ \\ (?<v0>.*?)\\ :\\ (?<v1>.*?)\\ trace\\(s\\)\\ à\\ examiner$",
         "English": "  {0}: {1} indicator(s) to investigate",
@@ -2984,6 +3708,13 @@ $script:UiCatalog = @'
         "Pattern": "^Échec\\ de\\ lecture\\ hosts\\ :\\ (?<v0>.*?)$",
         "English": "Failed to read hosts: {0}",
         "Count": 1,
+        "Weight": 25
+    },
+    {
+        "French": "VÉRIFICATION NON RÉALISÉE",
+        "Pattern": "^VÉRIFICATION\\ NON\\ RÉALISÉE$",
+        "English": "CHECK NOT COMPLETED",
+        "Count": 0,
         "Weight": 25
     },
     {
@@ -3039,6 +3770,13 @@ $script:UiCatalog = @'
         "French": "Cache NIKKE introuvable.",
         "Pattern": "^Cache\\ NIKKE\\ introuvable\\.$",
         "English": "NIKKE launcher cache not found.",
+        "Count": 0,
+        "Weight": 24
+    },
+    {
+        "French": "H  Comprendre NikkeTrace",
+        "Pattern": "^H\\ \\ Comprendre\\ NikkeTrace$",
+        "English": "H  About NikkeTrace",
         "Count": 0,
         "Weight": 24
     },
@@ -3120,6 +3858,13 @@ $script:UiCatalog = @'
         "Weight": 22
     },
     {
+        "French": "Actuelle ou à examiner",
+        "Pattern": "^Actuelle\\ ou\\ à\\ examiner$",
+        "English": "Current or needing review",
+        "Count": 0,
+        "Weight": 22
+    },
+    {
         "French": "    Dossier trouvé : $path",
         "Pattern": "^\\ \\ \\ \\ Dossier\\ trouvé\\ :\\ (?<v0>.*?)$",
         "English": "    Folder found: {0}",
@@ -3166,6 +3911,13 @@ $script:UiCatalog = @'
         "Pattern": "^Module\\ inexploitable\\.$",
         "English": "Unusable module data.",
         "Count": 0,
+        "Weight": 21
+    },
+    {
+        "French": "Contrôle incomplet : {0}",
+        "Pattern": "^Contrôle\\ incomplet\\ :\\ (?<v0>.*?)$",
+        "English": "Incomplete check: {0}",
+        "Count": 1,
         "Weight": 21
     },
     {
@@ -3239,6 +3991,20 @@ $script:UiCatalog = @'
         "Weight": 20
     },
     {
+        "French": "ACTIONS RECOMMANDÉES",
+        "Pattern": "^ACTIONS\\ RECOMMANDÉES$",
+        "English": "RECOMMENDED ACTIONS",
+        "Count": 0,
+        "Weight": 20
+    },
+    {
+        "French": "Cache NIKKE supprimé",
+        "Pattern": "^Cache\\ NIKKE\\ supprimé$",
+        "English": "NIKKE launcher cache deleted",
+        "Count": 0,
+        "Weight": 20
+    },
+    {
         "French": "Acces impossible : $Path",
         "Pattern": "^Acces\\ impossible\\ :\\ (?<v0>.*?)$",
         "English": "Access unavailable: {0}",
@@ -3285,6 +4051,20 @@ $script:UiCatalog = @'
         "Pattern": "^Fichier\\ concerné\\ :\\ (?<v0>.*?)$",
         "English": "Affected file: {0}",
         "Count": 1,
+        "Weight": 19
+    },
+    {
+        "French": "A  Options avancées",
+        "Pattern": "^A\\ \\ Options\\ avancées$",
+        "English": "A  Advanced options",
+        "Count": 0,
+        "Weight": 19
+    },
+    {
+        "French": "ÉLÉMENTS À EXAMINER",
+        "Pattern": "^ÉLÉMENTS\\ À\\ EXAMINER$",
+        "English": "ITEMS NEEDING REVIEW",
+        "Count": 0,
         "Weight": 19
     },
     {
@@ -3340,6 +4120,20 @@ $script:UiCatalog = @'
         "French": "TOUJOURS PRÉSENT",
         "Pattern": "^TOUJOURS\\ PRÉSENT$",
         "English": "STILL PRESENT",
+        "Count": 0,
+        "Weight": 16
+    },
+    {
+        "French": "Rapport privé : {0}",
+        "Pattern": "^Rapport\\ privé\\ :\\ (?<v0>.*?)$",
+        "English": "Private report: {0}",
+        "Count": 1,
+        "Weight": 16
+    },
+    {
+        "French": "OPTIONS AVANCÉES",
+        "Pattern": "^OPTIONS\\ AVANCÉES$",
+        "English": "ADVANCED OPTIONS",
         "Count": 0,
         "Weight": 16
     },
@@ -3491,9 +4285,30 @@ $script:UiCatalog = @'
         "Weight": 11
     },
     {
+        "French": "Votre choix",
+        "Pattern": "^Votre\\ choix$",
+        "English": "Your choice",
+        "Count": 0,
+        "Weight": 11
+    },
+    {
+        "French": "  Raison : {0}",
+        "Pattern": "^\\ \\ Raison\\ :\\ (?<v0>.*?)$",
+        "English": "  Reason: {0}",
+        "Count": 1,
+        "Weight": 11
+    },
+    {
         "French": "0  Quitter",
         "Pattern": "^0\\ \\ Quitter$",
         "English": "0  Quit",
+        "Count": 0,
+        "Weight": 10
+    },
+    {
+        "French": "Historique",
+        "Pattern": "^Historique$",
+        "English": "Historical",
         "Count": 0,
         "Weight": 10
     },
@@ -3502,6 +4317,13 @@ $script:UiCatalog = @'
         "Pattern": "^(?<v0>.*?)\\ \\(ligne\\ (?<v1>.*?)\\)$",
         "English": "{0} (line {1})",
         "Count": 2,
+        "Weight": 9
+    },
+    {
+        "French": "B  Retour",
+        "Pattern": "^B\\ \\ Retour$",
+        "English": "B  Back",
+        "Count": 0,
         "Weight": 9
     },
     {
@@ -3544,6 +4366,13 @@ $script:UiCatalog = @'
         "Pattern": "^\\ \\ (?<v0>.*?)\\ —\\ (?<v1>.*?)\\ :\\ (?<v2>.*?)$",
         "English": "  {0} — {1}: {2}",
         "Count": 3,
+        "Weight": 8
+    },
+    {
+        "French": "BILAN : {0}",
+        "Pattern": "^BILAN\\ :\\ (?<v0>.*?)$",
+        "English": "RESULT: {0}",
+        "Count": 1,
         "Weight": 8
     },
     {
@@ -3641,6 +4470,13 @@ $script:UiCatalog = @'
         "French": "  $Label : $Reason",
         "Pattern": "^\\ \\ (?<v0>.*?)\\ :\\ (?<v1>.*?)$",
         "English": "  {0}: {1}",
+        "Count": 2,
+        "Weight": 5
+    },
+    {
+        "French": "  [{0}] {1}",
+        "Pattern": "^\\ \\ \\[(?<v0>.*?)\\]\\ (?<v1>.*?)$",
+        "English": "  [{0}] {1}",
         "Count": 2,
         "Weight": 5
     },
@@ -3755,6 +4591,8 @@ function Initialize-Report {
     $script:HistoricalExposure = $false
     $script:BrowserNames = New-Object 'System.Collections.Generic.List[string]'
     $script:AdviceShown = $false
+    $script:CleanupNeedsRestart = $false
+    $script:CleanupOutcomes = New-Object 'System.Collections.Generic.List[object]'
 }
 
 function Write-Report([string]$Text, [ConsoleColor]$Color = 'Gray') {
@@ -3850,10 +4688,19 @@ function Test-LogFile([string]$Path) {
     try {
         if ([IO.Path]::GetFileName($Path) -like 'tinyget.*.log') {
             $info = Get-Item -LiteralPath $Path -ErrorAction Stop
-            if ($info.Length -eq 205135 -and (Get-FileHash -LiteralPath $Path -Algorithm SHA256 -ErrorAction Stop).Hash -eq 'cc0ad05bfe85940a6067b3a72c182d3953339129206634141926d5d0b35973ec') {
-                Add-Finding 'Empreinte du payload signalé dans un fichier tinyget' $Path $true 'Fichier' @{
-                    Path = $Path
-                    PayloadHash = 'cc0ad05bfe85940a6067b3a72c182d3953339129206634141926d5d0b35973ec'
+            if ($info.Length -eq 205135) {
+                $knownHash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256 -ErrorAction Stop).Hash -eq 'cc0ad05bfe85940a6067b3a72c182d3953339129206634141926d5d0b35973ec'
+                if (-not $knownHash) {
+                    Add-Finding 'Fichier téléchargé à examiner : taille signalée, contenu non confirmé' $Path $false 'Observation' @{
+                        Path = $Path
+                        Area = 'NIKKE'
+                        SizeCandidate = $true
+                    }
+                } else {
+                    Add-Finding 'Empreinte du payload signalé dans un fichier tinyget' $Path $true 'Fichier' @{
+                        Path = $Path
+                        PayloadHash = 'cc0ad05bfe85940a6067b3a72c182d3953339129206634141926d5d0b35973ec'
+                    }
                 }
             }
         }
@@ -3942,7 +4789,7 @@ function Test-NikkePath([string]$Path, [switch]$Required) {
 function Get-NikkeInstallPaths {
     foreach ($drive in [IO.DriveInfo]::GetDrives()) {
         if ($drive.DriveType -eq [IO.DriveType]::Fixed -and $drive.IsReady) {
-            foreach ($suffix in @('NIKKE', 'Program Files\NIKKE', 'Program Files (x86)\NIKKE', 'Games\NIKKE', 'Level Infinite\NIKKE')) {
+            foreach ($suffix in @('NIKKE', 'NIKKE_GOOGLE', 'Program Files\NIKKE', 'Program Files (x86)\NIKKE', 'Games\NIKKE', 'Level Infinite\NIKKE')) {
                 Join-Path $drive.RootDirectory.FullName $suffix
             }
         }
@@ -4234,6 +5081,58 @@ function Test-PersistenceValue([string]$Sub, [string]$Name, [string]$Value, [str
     }
 }
 
+function Test-EmptyUserClsid([Microsoft.Win32.RegistryKey]$Base, [string]$View) {
+    $parent = 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}'
+    $key = $Base.OpenSubKey($parent, $false)
+    try {
+        if ($null -ne $key -and $key.GetValueNames().Count -eq 0 -and $key.GetSubKeyNames().Count -eq 0) {
+            Add-Finding 'Ancienne référence de démarrage vide liée à cet incident' "$View / $parent" $false 'Registre' @{
+                Hive = 'CurrentUser'
+                View = $View
+                SubKey = $parent
+                Name = ''
+                EmptyClsid = $true
+                Fingerprint = 'empty'
+            }
+        }
+    } finally {
+        if ($null -ne $key) {
+            $key.Dispose()
+        }
+    }
+}
+
+function Remove-EmptyUserClsid([hashtable]$Target, [string]$BackupPath) {
+    $parent = 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}'
+    if ($Target.Hive -ne 'CurrentUser' -or $Target.SubKey -ne $parent) {
+        throw 'Référence hors du périmètre autorisé.'
+    }
+    $view = [Microsoft.Win32.RegistryView][Enum]::Parse([Microsoft.Win32.RegistryView], $Target.View)
+    $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser, $view)
+    $key = $null
+    try {
+        $key = $base.OpenSubKey($parent, $false)
+        if ($null -eq $key) {
+            return $false
+        }
+        if ($key.GetValueNames().Count -ne 0 -or $key.GetSubKeyNames().Count -ne 0) {
+            throw 'La référence a changé : retrait annulé.'
+        }
+        $Target | Export-Clixml -LiteralPath $BackupPath -Encoding UTF8 -ErrorAction Stop
+        $key.Dispose()
+        $key = $null
+        # Non-recursive deletion refuses any newly added child key.
+        $base.DeleteSubKey($parent, $false)
+        return $true
+    } finally {
+        if ($null -ne $key) {
+            $key.Dispose()
+        }
+        $base.Dispose()
+    }
+}
+
+
 function Test-Persistence {
     $com = 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}\InprocServer32'
     foreach ($hive in @([Microsoft.Win32.RegistryHive]::CurrentUser, [Microsoft.Win32.RegistryHive]::LocalMachine)) {
@@ -4241,6 +5140,9 @@ function Test-Persistence {
             $base = $null
             try {
                 $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, $view)
+                if ($hive -eq [Microsoft.Win32.RegistryHive]::CurrentUser) {
+                    Test-EmptyUserClsid $base ([string]$view)
+                }
                 foreach ($sub in @($com, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Software\Microsoft\Windows\CurrentVersion\RunOnce')) {
                     # The HKLM CLSID normally belongs to the Windows component wpc.dll.
                     if ($sub -eq $com -and $hive -eq [Microsoft.Win32.RegistryHive]::LocalMachine) {
@@ -4293,9 +5195,18 @@ function Get-Verdict([int]$StrongCount, [int]$WeakCount, [int]$ReadCount, [int]$
     return 'AUCUNE TRACE CONNUE DETECTEE DANS LE PERIMETRE VERIFIE - aucune garantie que le PC soit sain.'
 }
 
-function Confirm-Action([string]$Question) {
+function Confirm-Action([string]$Question, [switch]$AllowReport) {
     do {
-        $answer = (Read-Host "$Question [O/N, Entrée = Non]").Trim().ToLowerInvariant()
+        $prompt = if ($AllowReport) {
+            "$Question [O/N/R = rapport, Entrée = Non]"
+        } else {
+            "$Question [O/N, Entrée = Non]"
+        }
+        $answer = (Read-Host $prompt).Trim().ToLowerInvariant()
+        if ($AllowReport -and $answer -eq 'r') {
+            Open-PlayerReport
+            continue
+        }
         if ($answer -in @('o', 'oui', 'y', 'yes')) {
             return $true
         }
@@ -4344,6 +5255,7 @@ function Get-NikkeResidualPaths {
     if ($env:APPDATA) {
         Join-Path $env:APPDATA 'nikke_launcher'
         Join-Path $env:APPDATA 'nikke_launcher_hmt'
+        Join-Path $env:APPDATA 'nikke_launcher_google'
     }
     if ($env:LOCALAPPDATA) {
         Join-Path $env:LOCALAPPDATA 'NIKKE'
@@ -4870,9 +5782,153 @@ function Remove-NikkeCache([string]$Path, [string]$ReportFile) {
     }
 }
 
-function Offer-LauncherCacheRemoval {
+function Get-CleanupBootId {
+    (Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop).LastBootUpTime.ToUniversalTime().ToString('o')
+}
+
+function Get-CleanupStatePath {
+    if (-not $env:LOCALAPPDATA) {
+        throw 'Dossier local indisponible : nettoyage suspendu.'
+    }
+    Join-Path $env:LOCALAPPDATA 'NIKKE-Assistance\Workflow\pending.json'
+}
+
+function Get-CleanupRestartState {
+    $path = Get-CleanupStatePath
+    try {
+        $file = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+    }
+    catch [System.Management.Automation.ItemNotFoundException] {
+        return 'None'
+    }
+    Assert-NoReparsePoint $path
+    if ($file.PSIsContainer -or $file.Length -gt 4096) {
+        throw 'État de reprise invalide : nettoyage suspendu.'
+    }
+    $state = [IO.File]::ReadAllText($path) | ConvertFrom-Json -ErrorAction Stop
+    if ($state.Version -ne 1 -or $state.UserSid -ne [Security.Principal.WindowsIdentity]::GetCurrent().User.Value -or $state.BootId -isnot [string] -or $state.BootId.Length -gt 80) {
+        throw 'État de reprise invalide : nettoyage suspendu.'
+    }
+    if ($state.BootId -ceq (Get-CleanupBootId)) {
+        return 'Required'
+    }
+    return 'Observed'
+}
+
+function Save-CleanupRestartState {
+    $boot = Get-CleanupBootId
+    if ([string]::IsNullOrWhiteSpace($boot)) {
+        throw 'Impossible de préparer une reprise fiable après redémarrage.'
+    }
+    $path = Get-CleanupStatePath
+    $folder = [IO.Path]::GetDirectoryName($path)
+    [void][IO.Directory]::CreateDirectory($folder)
+    Assert-NoReparsePoint $folder
+    $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+    $security = New-Object Security.AccessControl.DirectorySecurity
+    $security.SetOwner($sid)
+    $security.SetAccessRuleProtection($true, $false)
+    foreach ($identity in @($sid, [Security.Principal.SecurityIdentifier]::new('S-1-5-18'))) {
+        [void]$security.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity, 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow'))
+    }
+    [IO.Directory]::SetAccessControl($folder, $security)
+    $temporary = Join-Path $folder ([guid]::NewGuid().ToString('N') + '.tmp')
+    try {
+        [pscustomobject]@{
+            Version = 1
+            BootId = $boot
+            UserSid = $sid.Value
+        } |
+        ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8 -ErrorAction Stop
+        if (Test-Path -LiteralPath $path -ErrorAction Stop) {
+            Assert-NoReparsePoint $path
+            [IO.File]::Replace($temporary, $path, $null)
+        } else {
+            [IO.File]::Move($temporary, $path)
+        }
+    } finally {
+        if ([IO.File]::Exists($temporary)) {
+            [IO.File]::Delete($temporary)
+        }
+    }
+}
+
+function Clear-CleanupRestartState {
+    $path = Get-CleanupStatePath
+    if (Test-Path -LiteralPath $path -ErrorAction Stop) {
+        Assert-NoReparsePoint $path
+        [IO.File]::Delete($path)
+    }
+}
+
+function Add-CleanupOutcome([string]$Outcome, [string]$Label, [string]$Location) {
+    if ($Outcome -eq 'Done') {
+        foreach ($previous in $script:CleanupOutcomes) {
+            if ($previous.Outcome -eq 'Failed' -and $previous.Location -eq $Location) {
+                $previous.Outcome = 'Resolved'
+            }
+        }
+    }
+    $script:CleanupOutcomes.Add([pscustomobject]@{
+            Outcome = $Outcome; Label = $Label; Location = $Location
+        })
+}
+
+function Show-RestartInstructions {
+    $script:CleanupNeedsRestart = $true
+    Write-Report 'NETTOYAGE EN ATTENTE DU REDÉMARRAGE' Yellow
+    Write-Report 'Enregistrez vos travaux, redémarrez Windows puis relancez ce même fichier et choisissez la vérification complète.'
+    Write-Report 'Les fichiers suspects et le cache du lanceur seront traités après ce redémarrage. Ne relancez pas le jeu ni son lanceur entre-temps.'
+    Write-Report 'NikkeTrace ne redémarre pas le PC et ne lance rien automatiquement au démarrage.'
+    Show-AccountPriority
+    Save-Report
+}
+
+function Invoke-GuidedCleanup {
+    $beforeFailed = @($script:CleanupOutcomes | Where-Object {
+            $_.Outcome -eq 'Failed'
+        }).Count
+    try {
+        $result = Invoke-GuidedCleanupCore
+        if ($result -isnot [string] -or $result -notin @('Failed', 'Completed', 'RestartRequired', 'Declined', 'NoAction')) {
+            throw 'Unexpected cleanup result.'
+        }
+    } catch {
+        $result = 'Failed'
+        Write-Report 'Nettoyage interrompu : aucun résultat global ne peut être confirmé. Consultez le rapport.' Yellow
+        Write-Detail $_.Exception.Message
+    }
+    if ($result -eq 'Failed' -and @($script:CleanupOutcomes | Where-Object {
+                $_.Outcome -eq 'Failed'
+            }).Count -eq $beforeFailed) {
+        Add-CleanupOutcome 'Failed' 'Nettoyage interrompu ou non confirmé' 'Workflow'
+    }
+    if ($result -in @('Completed', 'NoAction')) {
+        foreach ($previous in $script:CleanupOutcomes) {
+            if ($previous.Outcome -eq 'Failed' -and $previous.Location -eq 'Workflow') {
+                $previous.Outcome = 'Resolved'
+            }
+        }
+    }
+    return $result
+}
+
+function Invoke-GuidedCleanupCore {
     Write-Report ''
-    Write-Report 'SUPPRESSION FACULTATIVE DU CACHE NIKKE' Cyan
+    Write-Report 'NETTOYAGE GUIDÉ — JEU INSTALLÉ OU DÉJÀ SUPPRIMÉ' Cyan
+    try {
+        $restart = Get-CleanupRestartState
+    }
+    catch {
+        Write-Report 'La reprise du nettoyage ne peut pas être vérifiée. Aucun fichier ne sera retiré.' Yellow
+        Write-Detail $_.Exception.Message
+        return 'Failed'
+    }
+    $script:CleanupNeedsRestart = ($restart -eq 'Required')
+    if ($restart -eq 'Required') {
+        Show-RestartInstructions
+        return 'RestartRequired'
+    }
     $roots = New-Object 'System.Collections.Generic.List[string]'
     try {
         foreach ($path in @(Get-LauncherCacheRoots)) {
@@ -4881,89 +5937,220 @@ function Offer-LauncherCacheRemoval {
             }
         }
     } catch {
-        Write-Report 'Cache non supprimé : son emplacement ne peut pas être confirmé.' Yellow
+        Write-Report 'Un cache ne peut pas être traité automatiquement. Les autres actions restent disponibles.' Yellow
         Write-Detail $_.Exception.Message
-        return
     }
-    if ($roots.Count -eq 0) {
-        Write-Report 'Aucun cache NIKKE trouvé aux emplacements habituels.'
-        return
-    }
-    $before = Invoke-CacheSnapshot
+    $beforeCache = Invoke-CacheSnapshot
     if ($null -ne $script:CurrentSnapshot) {
         $previousCache = [pscustomobject]@{
-            Findings = @($script:CurrentSnapshot.Findings | Where-Object { $_.Target.ContainsKey('Storage') -and $_.Target.Storage })
+            Findings = @($script:CurrentSnapshot.Findings | Where-Object {
+                    $_.Target.ContainsKey('Storage')
+                })
         }
-        [void](Compare-TraceSnapshots $previousCache $before)
+        [void](Compare-TraceSnapshots $previousCache $beforeCache)
+    }
+    $snapshot = if ($null -ne $script:CurrentSnapshot) {
+        $script:CurrentSnapshot
+    } else {
+        $beforeCache
+    }
+    $plan = @(Get-CleanupPlan $snapshot)
+    $registry = @($plan | Where-Object {
+            $_.Action -eq 'Registre'
+        })
+    $files = @($plan | Where-Object {
+            $_.Action -eq 'Quarantaine'
+        })
+    $games = @(Get-NikkeRemovalCandidates)
+    if ($plan.Count -eq 0 -and $roots.Count -eq 0 -and $games.Count -eq 0) {
+        Write-Report 'Aucun élément connu ne peut être nettoyé automatiquement pour ce résultat.'
+        if ($restart -eq 'Observed') {
+            Clear-CleanupRestartState
+        }
+        return 'NoAction'
+    }
+    if ($plan.Count -eq 0) {
+        Write-Report 'Aucune trace actuelle à retirer automatiquement. La réinitialisation du cache est proposée par précaution.'
+    }
+    foreach ($action in $plan) {
+        $label = if ($action.Action -eq 'Registre') {
+            'Élément de démarrage suspect à retirer'
+        } else {
+            'Fichier suspect à isoler avec copie de récupération'
+        }
+        Write-Report $label
+        Write-Detail "Action prévue : $($action.Action) — $($action.Finding.Location)"
+    }
+    if ($roots.Count -gt 0) {
+        Write-Report "Caches du lanceur à réinitialiser : $($roots.Count)."
     }
     foreach ($path in $roots) {
-        Write-Report "Cache NIKKE proposé à la suppression : $path"
+        Write-Detail "Cache NIKKE proposé à la suppression : $path"
     }
-    Write-Report 'Le profil CEF partagé et les profils des navigateurs seront conservés.'
-    Write-Report 'Suppression définitive : vous pourrez être déconnecté du lanceur et ses réglages seront réinitialisés.' Yellow
-    Write-Report 'Le rapport conserve les traces détectées, pas une copie des fichiers du cache.'
+    if ($roots.Count -gt 0) {
+        Write-Report 'Suppression définitive du cache : vous pourrez être déconnecté et les réglages du lanceur seront réinitialisés.' Yellow
+        Write-Report 'Le rapport conserve les traces détectées, pas une copie des fichiers du cache.'
+    }
+    Write-Report 'Les données des autres applications, les navigateurs et les éléments non reconnus seront conservés.'
+    if ($registry.Count -gt 0) {
+        Write-Report 'Étape 1 : retirer l élément de démarrage suspect. Étape 2 : redémarrer Windows avant le traitement des fichiers et du cache.' Yellow
+    }
+    if ($games.Count -gt 0) {
+        Write-Report 'Le retrait du jeu et du lanceur sera proposé séparément. Il ne sera jamais fait sans votre accord.'
+    }
     try {
+        $unsafeReports = @($roots.ToArray()) + $games
+        if ($script:ReportPath -and @($unsafeReports | Where-Object {
+                    [IO.Path]::GetFullPath($script:ReportPath).StartsWith($_.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)
+                }).Count -gt 0) {
+            $script:ReportPath = Join-Path $env:LOCALAPPDATA ('NIKKE-Assistance\Reports\Bilan-' + [guid]::NewGuid().ToString('N') + '.txt')
+        }
         Save-Report -Required
-        if (-not $script:ReportPath -or -not [IO.File]::Exists($script:ReportPath)) {
+        if (-not $script:ReportPath -or -not [IO.File]::Exists($script:ReportPath) -or (Get-Item -LiteralPath $script:ReportPath -ErrorAction Stop).Length -eq 0) {
             throw 'Rapport absent.'
         }
-        foreach ($root in $roots) {
-            if ([IO.Path]::GetFullPath($script:ReportPath).StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
-                throw 'Rapport situé dans le cache.'
+        foreach ($path in $unsafeReports) {
+            if ([IO.Path]::GetFullPath($script:ReportPath).StartsWith($path.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'Rapport situé dans un dossier à retirer.'
             }
         }
     } catch {
-        Write-Report 'Rapport non sauvegardé : aucun cache ne sera supprimé.' Yellow
-        return
+        Write-Report 'Rapport non sauvegardé : aucun nettoyage ne sera effectué.' Yellow
+        return 'Failed'
     }
-    Write-Report "Rapport sauvegardé avant suppression : $script:ReportPath"
-    if (-not (Confirm-Action 'Supprimer définitivement ces caches NIKKE ?')) {
-        Write-Report 'Suppression du cache refusée : aucun fichier supprimé.'
-        return
+    Write-Report "Rapport sauvegardé avant nettoyage : $script:ReportPath"
+    if (-not (Confirm-Action 'Effectuer ce nettoyage guidé ?' -AllowReport)) {
+        Write-Report 'Nettoyage refusé : aucun élément modifié.'
+        return 'Declined'
+    }
+    try {
+        Assert-LauncherClosed
+    }
+    catch {
+        Write-Report 'Fermez NIKKE et son lanceur, puis réessayez. Aucun programme ne sera fermé de force.' Yellow
+        return 'Failed'
     }
     $failed = 0
+    if ($registry.Count -gt 0) {
+        try {
+            $folder = New-QuarantineFolder
+            Save-CleanupRestartState
+            foreach ($action in $registry) {
+                try {
+                    $backup = Join-Path $folder ('registry-' + [guid]::NewGuid().ToString('N') + '.xml')
+                    if (Remove-KnownRegistryOverride $action.Finding.Target $backup) {
+                        Add-CleanupOutcome 'Done' 'Référence du registre retirée et sauvegardée' $action.Finding.Location
+                        Write-Report 'Élément de démarrage suspect retiré. Redémarrage nécessaire pour continuer.' Green
+                        $script:CurrentSnapshot.Findings = @($script:CurrentSnapshot.Findings | Where-Object {
+                                $_.Id -ne $action.Finding.Id
+                            })
+                    }
+                } catch {
+                    Add-CleanupOutcome 'Failed' 'Retrait du registre non confirmé' $action.Finding.Location
+                    Write-Report 'Le retrait d un élément de démarrage suspect n a pas pu être confirmé. Consultez le rapport.' Yellow
+                    Write-Detail $_.Exception.Message
+                }
+            }
+        } catch {
+            Write-Report 'La première étape ne peut pas être terminée. Aucun traitement des fichiers suspects ou du cache ne sera tenté.' Yellow
+            Write-Detail $_.Exception.Message
+            Save-Report
+            return 'Failed'
+        }
+        Show-RestartInstructions
+        return 'RestartRequired'
+    }
+    if ($restart -eq 'Observed') {
+        Write-Report 'Redémarrage Windows confirmé : le nettoyage peut continuer.' Cyan
+    }
+    if ($files.Count -gt 0) {
+        try {
+            $folder = New-QuarantineFolder
+        }
+        catch {
+            Add-CleanupOutcome 'Failed' 'Retrait du fichier non confirmé' 'Quarantine unavailable'
+            Write-Report 'Le dossier de récupération ne peut pas être préparé. Aucun fichier suspect ne sera déplacé.' Yellow
+            Write-Detail $_.Exception.Message
+            Save-Report
+            return 'Failed'
+        }
+        foreach ($action in $files) {
+            $finding = $action.Finding
+            try {
+                $destination = Move-TraceToQuarantine $finding $folder
+                Add-CleanupOutcome 'Done' 'Fichier isolé en quarantaine' $finding.Location
+                Write-Report 'Fichier suspect isolé ; retrait confirmé.' Green
+                Write-Detail "Fichier traité : $($finding.Location)"
+                Write-Detail "Copie de récupération : $destination"
+            } catch {
+                $failed++
+                Add-CleanupOutcome 'Failed' 'Retrait du fichier non confirmé' $finding.Location
+                Write-Report 'Un fichier suspect n a pas pu être retiré. Consultez le rapport.' Yellow
+                Write-Detail $_.Exception.Message
+            }
+        }
+    }
     foreach ($path in $roots) {
         try {
             Remove-NikkeCache $path $script:ReportPath
-            Write-Report "CACHE NIKKE SUPPRIMÉ ET ABSENCE CONFIRMÉE : $path" Green
+            Add-CleanupOutcome 'Done' 'Cache NIKKE supprimé' $path
+            Write-Report 'Cache du lanceur supprimé ; absence confirmée.' Green
+            Write-Detail "Cache supprimé : $path"
         } catch {
             $failed++
-            Write-Report "CACHE NON SUPPRIMÉ OU SUPPRESSION INCOMPLÈTE : $path" Yellow
-            if ($_.Exception.Message -match '^Fermez NIKKE') {
-                Write-Report 'Fermez NIKKE et son lanceur, puis réessayez. Aucun programme ne sera fermé de force.' Yellow
-            }
-            else {
-                Write-Report 'Consultez le rapport pour le détail ; aucun retrait non confirmé ne sera annoncé comme réussi.' Yellow
-            }
+            Add-CleanupOutcome 'Failed' 'Suppression du cache non confirmée' $path
+            Write-Report 'Suppression du cache incomplète ou non confirmée.' Yellow
+            Write-Detail "Cache concerné : $path"
             Write-Detail $_.Exception.Message
         }
     }
-    $after = Invoke-CacheSnapshot
-    $changes = @(Compare-TraceSnapshots $before $after)
-    foreach ($change in $changes) {
-        Write-Report "Cache après suppression : $($change.State) — $($change.Finding.Location)"
-    }
-    if ($after.Findings.Count -gt 0) {
-        Write-Report 'TRACES ENCORE PRÉSENTES OU À EXAMINER DANS LES CACHES :' Yellow
-        foreach ($finding in $after.Findings) {
-            Write-Report "  $($finding.Target.Marker) — $($finding.Location)" Yellow
+    foreach ($path in $games) {
+        Write-Report "Installation NIKKE encore présente : $path"
+        Write-Report 'Ce retrait renomme le dossier et conserve une copie récupérable ; il ne libère pas l espace disque.'
+        if (Confirm-Action 'Retirer aussi cette installation du jeu et son lanceur ?') {
+            try {
+                Assert-LauncherClosed
+                $result = Move-NikkeInstallation $path
+                Add-CleanupOutcome 'Done' 'Installation retirée du chemin initial' $path
+                Write-Report "JEU RETIRÉ DU CHEMIN INITIAL : $($result.Source)" Green
+                Write-Detail "Copie conservée : $($result.Destination)"
+            } catch {
+                $failed++
+                Add-CleanupOutcome 'Failed' 'Retrait de l installation non confirmé' $path
+                Write-Report 'Retrait de l installation non confirmé : consultez le rapport.' Yellow
+                Write-Detail $_.Exception.Message
+            }
         }
-    } elseif ($failed -eq 0 -and $after.Checks[0].State -eq 'Effectué') {
-        Write-Report 'AUCUNE TRACE CONNUE TROUVÉE DANS LES CACHES VÉRIFIÉS.' Green
+    }
+    if ($null -ne $script:CurrentSnapshot -and $null -ne $script:CurrentSnapshot.PSObject.Properties['ScopeMode']) {
+        if (-not (Invoke-PostCleanupCheck)) {
+            $failed++
+        }
     } else {
-        Write-Report 'Vérification du cache incomplète : aucun nettoyage global ne peut être confirmé.' Yellow
+        $after = Invoke-CacheSnapshot
+        [void](Compare-TraceSnapshots $beforeCache $after)
+        $script:CurrentSnapshot = $after
+        if ($after.Findings.Count -gt 0) {
+            Write-Report 'TRACES ENCORE PRÉSENTES OU À EXAMINER DANS LES CACHES :' Yellow
+            foreach ($finding in $after.Findings) {
+                Write-Report 'Une trace ancienne reste à examiner ; son emplacement figure dans le rapport.' Yellow
+                Write-Detail "Trace conservée : $($finding.Target.Marker) — $($finding.Location)"
+            }
+        } elseif ($failed -eq 0 -and $after.Checks[0].State -eq 'Effectué') {
+            Write-Report 'AUCUNE TRACE CONNUE TROUVÉE DANS LES CACHES VÉRIFIÉS.' Green
+        }
+        else {
+            Write-Report 'Vérification du cache incomplète : aucun nettoyage global ne peut être confirmé.' Yellow
+        }
     }
-    if ($null -ne $script:CurrentSnapshot) {
-        $script:CurrentSnapshot.Findings = @($script:CurrentSnapshot.Findings | Where-Object {
-                -not $_.Target.ContainsKey('Storage')
-            }) + @($after.Findings)
-        $script:CurrentSnapshot.Issues = @($script:CurrentSnapshot.Issues) + @($after.Issues)
-        $script:CurrentSnapshot.Checks = @($script:CurrentSnapshot.Checks | Where-Object {
-                $_.Name -notlike 'Cache NIKKE*'
-            }) + @($after.Checks)
+    if ($failed -eq 0 -and $restart -eq 'Observed') {
+        Clear-CleanupRestartState
     }
-    Show-AccountPriority
     Save-Report
+    if ($failed -gt 0) {
+        return 'Failed'
+    }
+    return 'Completed'
 }
 
 
@@ -5255,6 +6442,7 @@ function Invoke-IndependentCheck([string]$Name, [scriptblock]$Action) {
     return [pscustomobject]@{
         Name = $Name
         State = $state
+        Reasons = @($script:Issues.ToArray() | Select-Object -Skip $beforeIssues)
     }
 }
 
@@ -5363,6 +6551,15 @@ function Read-RegistryArtifact([hashtable]$Target) {
         $view = [Microsoft.Win32.RegistryView][Enum]::Parse([Microsoft.Win32.RegistryView], $Target.View)
         $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, $view)
         $key = $base.OpenSubKey($Target.SubKey, $false)
+        if ($Target.ContainsKey('EmptyClsid') -and $Target.EmptyClsid) {
+            if ($null -eq $key) {
+                return 'Absent'
+            }
+            if ($key.GetValueNames().Count -eq 0 -and $key.GetSubKeyNames().Count -eq 0) {
+                return 'Present'
+            }
+            return 'Modifie'
+        }
         if ($null -eq $key -or $Target.Name -notin $key.GetValueNames()) {
             return 'Absent'
         }
@@ -5515,18 +6712,18 @@ function Get-FindingLabel($Finding) {
             } else {
                 $Finding.Target.Marker
             }
-            return "Marqueur « $marker » dans $([IO.Path]::GetFileName($Finding.Target.Path))"
+            return 'Trace historique liée à cet incident'
         }
         return 'Marqueur signalé dans un ancien journal'
     }
     if ($Finding.Type -eq 'Registre') {
         if ((Get-FindingArea $Finding) -eq 'Chrome') {
-            return 'Référence de démarrage Chrome dans le registre'
+            return 'Élément de démarrage lié à cet incident'
         }
-        return 'Entrée de démarrage Windows dans le registre'
+        return 'Élément de démarrage lié à cet incident'
     }
     if ($Finding.Type -eq 'Fichier' -and $Finding.Target.ContainsKey('Path')) {
-        return "Fichier $([IO.Path]::GetFileName($Finding.Target.Path))"
+        return 'Fichier suspect lié à cet incident'
     }
     return $Finding.Kind
 }
@@ -5709,99 +6906,178 @@ function Offer-BrowserClosure([string]$Scope = 'Tous') {
 }
 
 
-function Get-SnapshotConclusion($Snapshot) {
-    $rows = @($Snapshot.Findings)
-    if (@($rows | Where-Object {
-                $_.Type -ne 'Historique' -and $_.Strong -and -not $_.Target.ContainsKey('Unverified')
-            }).Count -gt 0) {
-        return [pscustomobject]@{
-            Text = 'TRACES CONNUES ACTUELLES TROUVÉES — voir les éléments ci-dessous'
-            Color = 'Red'
-        }
-    }
-    if (@($rows | Where-Object {
-                $_.Type -eq 'Historique' -and $_.Strong
-            }).Count -gt 0) {
-        return [pscustomobject]@{
-            Text = 'TRACES D UNE EXPOSITION PASSÉE TROUVÉES — protéger les comptes'
-            Color = 'Red'
-        }
-    }
-    if (@($rows | Where-Object {
-                $_.Target.ContainsKey('Unverified')
-            }).Count -gt 0) {
-        return [pscustomobject]@{
-            Text = 'TRACE PRÉCÉDEMMENT TROUVÉE — retrait non confirmé'
-            Color = 'Yellow'
-        }
-    }
-    if ($rows.Count -gt 0) {
-        return [pscustomobject]@{
-            Text = 'RÉFÉRENCES À L INCIDENT TROUVÉES — à examiner, infection non confirmée'
-            Color = 'Yellow'
-        }
-    }
-    $useful = @($Snapshot.Checks | Where-Object {
-            $_.Name -match '^(Journaux|Fichiers des navigateurs|Registre|Fichiers temporaires|Cache NIKKE)' -and $_.State -eq 'Effectué'
+function Get-ResultCounts($Snapshot) {
+    $checks = @($Snapshot.Checks | Where-Object {
+            $_.State -notlike 'Non demand*'
         })
-    if ($useful.Count -eq 0) {
+    $rows = @($Snapshot.Findings)
+    [pscustomobject]@{
+        Completed = @($checks | Where-Object {
+                $_.State -eq 'Effectué'
+            }).Count
+        Incomplete = @($checks | Where-Object {
+                $_.State -ne 'Effectué'
+            }).Count
+        Current = @($rows | Where-Object {
+                $_.Type -ne 'Historique' -and $_.Strong -and -not $_.Target.ContainsKey('Unverified')
+            }).Count
+        Historical = @($rows | Where-Object {
+                $_.Type -eq 'Historique'
+            }).Count
+        Review = @($rows | Where-Object {
+                $_.Type -ne 'Historique' -and -not $_.Strong
+            }).Count
+        Unconfirmed = @($rows | Where-Object {
+                $_.Target.ContainsKey('Unverified')
+            }).Count
+    }
+}
+
+function Get-SnapshotConclusion($Snapshot) {
+    $counts = Get-ResultCounts $Snapshot
+    if ($script:CleanupNeedsRestart) {
         return [pscustomobject]@{
-            Text = 'VÉRIFICATION NON RÉALISÉE — aucun contrôle utile n a pu aboutir'
+            Text = 'NETTOYAGE EN ATTENTE DU REDÉMARRAGE'
+            Color = 'Yellow'
+        }
+    }
+    if ($counts.Current -gt 0) {
+        return [pscustomobject]@{
+            Text = 'TRACES ACTUELLES À TRAITER'
+            Color = 'Red'
+        }
+    }
+    if ($counts.Unconfirmed -gt 0) {
+        return [pscustomobject]@{
+            Text = 'RETRAIT NON CONFIRMÉ — VÉRIFICATIONS NÉCESSAIRES'
+            Color = 'Yellow'
+        }
+    }
+    if (@($script:CleanupOutcomes | Where-Object {
+                $_.Outcome -eq 'Failed'
+            }).Count -gt 0) {
+        return [pscustomobject]@{
+            Text = 'NETTOYAGE PARTIEL OU NON CONFIRMÉ'
+            Color = 'Yellow'
+        }
+    }
+    if ($counts.Historical -gt 0) {
+        return [pscustomobject]@{
+            Text = 'TRACES HISTORIQUES — EXPOSITION PASSÉE À EXAMINER'
+            Color = 'Yellow'
+        }
+    }
+    if ($counts.Review -gt 0) {
+        return [pscustomobject]@{
+            Text = 'ÉLÉMENTS À EXAMINER'
+            Color = 'Yellow'
+        }
+    }
+    if ($counts.Completed -eq 0) {
+        return [pscustomobject]@{
+            Text = 'VÉRIFICATION NON RÉALISÉE'
             Color = 'Gray'
         }
     }
+    if ($counts.Incomplete -gt 0 -or $Snapshot.Issues.Count -gt 0) {
+        return [pscustomobject]@{
+            Text = 'VÉRIFICATION PARTIELLE — AUCUNE TRACE TROUVÉE DANS LES ÉLÉMENTS LUS'
+            Color = 'Yellow'
+        }
+    }
     return [pscustomobject]@{
-        Text = 'AUCUNE TRACE CONNUE DE CET INCIDENT TROUVÉE'
+        Text = 'AUCUNE TRACE CONNUE TROUVÉE'
         Color = 'Green'
     }
 }
 
-function Show-Snapshot($Snapshot) {
-    $scope = if ($Snapshot.ScopeMode -eq 'Navigateurs') {
-        $Snapshot.ScopeBrowser
-    } elseif ($Snapshot.GameRemoved) {
-        'NIKKE déjà supprimé'
-    } else {
-        'Traces NIKKE'
-    }
-    Write-Report ''
-    Write-Report "================ RÉSULTAT — $scope ================" Cyan
+function Get-PlayerSummary($Snapshot) {
+    $counts = Get-ResultCounts $Snapshot
     $conclusion = Get-SnapshotConclusion $Snapshot
-    Write-Report "  CONCLUSION : $($conclusion.Text)" $conclusion.Color
-    if ($Snapshot.Findings.Count -gt 0) {
-        foreach ($f in @($Snapshot.Findings | Select-Object -First 8)) {
-            $color = if ($f.Strong -and -not $f.Target.ContainsKey('Unverified')) {
-                'Red'
-            } else {
-                'Yellow'
-            }
-            $nature = if ($f.Target.ContainsKey('Unverified')) {
-                'Retrait non confirmé'
-            } elseif ($f.Type -eq 'Historique') {
-                'Trace passée'
-            } elseif ($f.Type -eq 'Observation') {
-                'Référence à examiner'
-            } else {
-                'Élément présent'
-            }
-            Write-Report "  $nature — $(Get-FindingArea $f) : $(Get-FindingLabel $f)" $color
-            Write-Report "      Où : $($f.Location)"
-        }
-        if ($Snapshot.Findings.Count -gt 8) {
-            Write-Report '  Les autres éléments trouvés sont accessibles avec D.'
-        }
+    'RÉSULTAT DE LA VÉRIFICATION'
+    'BILAN : ' + $conclusion.Text
+    ('Contrôles terminés : {0} ; incomplets : {1}.' -f $counts.Completed, $counts.Incomplete)
+    ('Traces actuelles : {0} ; historiques : {1} ; autres éléments à examiner : {2}.' -f $counts.Current, $counts.Historical, $counts.Review)
+    ('Actions confirmées : {0} ; actions échouées ou partielles : {1}.' -f @($script:CleanupOutcomes | Where-Object {
+                $_.Outcome -eq 'Done'
+            }).Count, @($script:CleanupOutcomes | Where-Object {
+                $_.Outcome -eq 'Failed'
+            }).Count)
+    if ($counts.Completed -eq 0) {
+        'Les contrôles disponibles ne permettent pas de conclure.'
     }
-    Write-Report '  Contrôle ciblé des traces connues et accessibles de cet incident ; ce résultat ne certifie pas que le PC est sain.'
-    if ($script:HistoricalExposure -and @($Snapshot.Findings | Where-Object {
-                $_.Type -eq 'Historique' -and $_.Strong
-            }).Count -eq 0) {
-        Write-Report '  Une exposition passée a été relevée précédemment : le changement des mots de passe reste nécessaire.'
+    elseif ($counts.Current -eq 0) {
+        'Aucune trace actuelle trouvée dans les éléments vérifiés. Cela ne prouve pas qu aucun programme malveillant ne s est exécuté.'
+    }
+    if ($counts.Historical -gt 0) {
+        'Une trace historique renseigne sur une exposition passée ; elle ne démontre pas à elle seule une activité actuelle.'
+    }
+    if ($counts.Incomplete -gt 0 -or $counts.Unconfirmed -gt 0) {
+        'Une vérification incomplète ne permet pas de conclure à l absence de trace dans la zone concernée.'
+    }
+    if ($counts.Current -eq 0 -and $counts.Historical -eq 0 -and $counts.Review -eq 0) {
+        'Ce résultat concerne les traces connues et le périmètre vérifié, sans certification de sécurité du PC.'
+    }
+    if ($script:HistoricalExposure) {
+        'Une exposition passée a été relevée pendant cette session ; un nettoyage ne peut pas annuler un éventuel vol d identifiants.'
+    }
+    if (@($script:CleanupOutcomes | Where-Object {
+                $_.Outcome -eq 'Done'
+            }).Count -gt 0) {
+        'Le nettoyage ne peut pas annuler un éventuel vol d identifiants : sécurisez vos comptes même après le retrait des traces.'
+    }
+    'ACTIONS RECOMMANDÉES'
+    if ($script:CleanupNeedsRestart) {
+        'Redémarrez Windows puis relancez le même fichier pour terminer le nettoyage.'
+    }
+    elseif ($counts.Current -gt 0) {
+        'Restez hors ligne, gardez le lanceur fermé et suivez le nettoyage guidé. Effectuez ensuite une analyse antivirus complète et hors connexion.'
+    }
+    elseif ($counts.Historical -gt 0 -or $counts.Review -gt 0) {
+        'Consultez le détail des traces et effectuez une analyse antivirus complète et hors connexion.'
+    }
+    if ($counts.Incomplete -gt 0 -or $counts.Unconfirmed -gt 0) {
+        if (@($Snapshot.Checks | Where-Object {
+                    $_.State -eq 'Partiel' -and $_.Name -match 'Journaux'
+                }).Count -gt 0) {
+            'Un ancien journal peut manquer après désinstallation ; les autres contrôles restent utiles. Ne réinstallez pas le jeu pour récupérer ce journal.'
+        }
+        if (@($Snapshot.Checks | Where-Object {
+                    $_.State -eq 'Partiel' -and $_.Name -match 'navigateurs|Cache NIKKE'
+                }).Count -gt 0) {
+            'Fermez les navigateurs et le lanceur puis réessayez. Si un fichier reste verrouillé, redémarrez Windows avant de relancer le contrôle.'
+        }
+        'Consultez le rapport si un contrôle reste incomplet ; cela ne signifie pas à lui seul une infection.'
+    }
+    'Sécurisez vos comptes depuis un appareil sain : mots de passe enregistrés ou utilisés sur ce PC, sessions ouvertes et clés ou jetons exposés.'
+}
+
+function Show-Snapshot($Snapshot) {
+    Write-Report ''
+    $conclusion = Get-SnapshotConclusion $Snapshot
+    foreach ($line in @(Get-PlayerSummary $Snapshot)) {
+        Write-Report $line $conclusion.Color
+    }
+    if ($Snapshot.Findings.Count -gt 0) {
+        Write-Report 'TRACES TROUVÉES — CHEMINS COMPLETS DANS LE RAPPORT'
+        foreach ($finding in @($Snapshot.Findings | Select-Object -First 5)) {
+            $label = if ($finding.Type -eq 'Historique') {
+                'Historique'
+            } else {
+                'Actuelle ou à examiner'
+            }
+            Write-Report "  $label — $(Get-FindingLabel $finding)"
+            Write-Detail "  Emplacement : $($finding.Location)"
+        }
     }
     foreach ($check in $Snapshot.Checks) {
         Write-Detail "Contrôle : $($check.Name) — $($check.State)"
     }
-    Write-Detail "Historique NIKKE : $($Snapshot.HistoryStatus) ; les journaux absents ne permettent pas de reconstituer le passé."
+    foreach ($issue in $Snapshot.Issues) {
+        Write-Detail "Limite du contrôle : $issue"
+    }
 }
+
 
 function Show-ResultDetails {
     Write-Host ''
@@ -5870,11 +7146,11 @@ function Invoke-PostCleanupCheck([switch]$OfferBrowserClose) {
             } else {
                 'Yellow'
             }
-            Write-Report "  [$label] $(Get-FindingArea $row.Finding) — $(Get-FindingLabel $row.Finding)" $color
+            Write-Report "  [$label] $(Get-FindingLabel $row.Finding)" $color
             Write-Detail "    Emplacement : $($row.Finding.Location)"
         }
         if ($changes.Count -eq 0) {
-            Write-Report '  Aucun fichier ou élément de registre suspect à comparer ; les journaux sont traités séparément.'
+            Write-Report '  Aucun élément suspect à comparer ; les anciennes traces restent détaillées dans le rapport.'
         }
         $removed = @($changes | Where-Object {
                 $_.State -eq 'Absent'
@@ -5890,9 +7166,17 @@ function Invoke-PostCleanupCheck([switch]$OfferBrowserClose) {
         $script:CurrentSnapshot = $after
         Show-Snapshot $after
     } catch {
+        Add-CleanupOutcome 'Failed' 'Revérification non confirmée' 'Recheck'
+        $script:CurrentSnapshot.Checks = @($script:CurrentSnapshot.Checks) + @([pscustomobject]@{
+                Name = 'Revérification après nettoyage'; State = 'Partiel'; Reasons = @($_.Exception.Message)
+            })
         Write-Report '  ÉCHEC de la revérification : aucun nettoyage ne peut être confirmé. Consulter Sécurité Windows.'
+        Write-Detail $_.Exception.Message
+        Save-Report
+        return $false
     }
     Save-Report
+    return $true
 }
 
 function Test-KnownChromeDllPath([string]$Path) {
@@ -5938,6 +7222,13 @@ function Get-CleanupPlan($Snapshot) {
             }
         } elseif ($f.Type -eq 'Registre') {
             $t = $f.Target
+            if ($t.ContainsKey('EmptyClsid') -and $t.EmptyClsid -and $t.Hive -eq 'CurrentUser' -and $t.SubKey -eq 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}') {
+                [pscustomobject]@{
+                    Action = 'Registre'
+                    Finding = $f
+                }
+                continue
+            }
             if ($t.ContainsKey('KnownChromeOverride') -and $t.KnownChromeOverride -and $t.Hive -eq 'CurrentUser' -and
                 $t.SubKey -eq 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}\InprocServer32' -and $t.Name -eq '') {
                 [pscustomobject]@{
@@ -6010,6 +7301,9 @@ function Move-TraceToQuarantine($Finding, [string]$Folder) {
 }
 
 function Remove-KnownRegistryOverride([hashtable]$Target, [string]$BackupPath) {
+    if ($Target.ContainsKey('EmptyClsid') -and $Target.EmptyClsid) {
+        return Remove-EmptyUserClsid $Target $BackupPath
+    }
     $expected = 'Software\Classes\CLSID\{E77CC89B-7401-4C04-8CED-149DB35ADD04}\InprocServer32'
     if ($Target.Hive -ne 'CurrentUser' -or $Target.SubKey -ne $expected -or $Target.Name -ne '') {
         throw 'Cette référence de registre ne fait pas partie du nettoyage ciblé.'
@@ -6053,7 +7347,20 @@ function Remove-KnownRegistryOverride([hashtable]$Target, [string]$BackupPath) {
         $key.Dispose()
         $key = $null
         $base.DeleteSubKey($expected, $false)
-        # Keep the parent CLSID and all other values.
+        # Remove the parent only when no values or child keys remain.
+        $parentPath = [IO.Path]::GetDirectoryName($expected)
+        $parent = $base.OpenSubKey($parentPath, $false)
+        try {
+            $empty = $null -ne $parent -and $parent.GetValueNames().Count -eq 0 -and $parent.GetSubKeyNames().Count -eq 0
+        }
+        finally {
+            if ($null -ne $parent) {
+                $parent.Dispose()
+            }
+        }
+        if ($empty) {
+            $base.DeleteSubKey($parentPath, $false)
+        }
         return $true
     } finally {
         if ($null -ne $key) {
@@ -6065,70 +7372,6 @@ function Remove-KnownRegistryOverride([hashtable]$Target, [string]$BackupPath) {
     }
 }
 
-function Invoke-TargetedCleanup {
-    $plan = @(Get-CleanupPlan $script:CurrentSnapshot)
-    Write-Report ''
-    Write-Report 'NETTOYAGE CIBLÉ DES TRACES DOCUMENTÉES'
-    if ($plan.Count -eq 0) {
-        Write-Report 'Aucun élément ne répond aux critères stricts du nettoyage. Rien ne sera supprimé.'
-        Write-Report 'Les autres indices restent à examiner avec une personne compétente.'
-        Invoke-PostCleanupCheck
-        return
-    }
-    Write-Host 'Fermez NIKKE et les navigateurs après avoir enregistré vos travaux. Aucun processus ne sera arrêté de force.'
-    Write-Host 'Les fichiers seront mis en quarantaine. Seule la référence HKCU pointant vers le chemin Chrome documenté peut être retirée.'
-    foreach ($action in $plan) {
-        Write-Host "  $($action.Action) : $($action.Finding.Location)"
-    }
-    Write-Host 'Les entrées de registre seront revérifiées et sauvegardées avant toute modification. Les éléments incertains restent en place.'
-    if (-not (Confirm-Action 'Effectuer ce nettoyage ciblé ?')) {
-        Write-Report 'Nettoyage refusé : aucun fichier déplacé ni registre modifié.'
-        return
-    }
-    if (-not $NoPrompt) {
-        Offer-BrowserClosure -Scope 'Tous'
-    }
-    $folder = $null
-    try {
-        $folder = New-QuarantineFolder
-        Write-Report "Quarantaine privée : $folder — ne pas ouvrir ou restaurer ces fichiers sans aide compétente."
-        foreach ($action in @($plan | Sort-Object Action -Descending)) {
-            $f = $action.Finding
-            try {
-                if ($action.Action -eq 'Registre') {
-                    $backup = Join-Path $folder ('registre-' + [guid]::NewGuid().ToString('N') + '.xml')
-                    if (Remove-KnownRegistryOverride $f.Target $backup) {
-                        Write-Report "SUPPRESSION CONFIRMÉE de la référence de registre : $($f.Location)" Green
-                        Write-Report "  Sauvegarde privée : $backup"
-                    } else {
-                        Write-Report "Déjà absente au moment du nettoyage : $($f.Location)"
-                    }
-                } else {
-                    $destination = Move-TraceToQuarantine $f $folder
-                    Write-Report "QUARANTAINE CONFIRMÉE : $($f.Location)" Green
-                    Write-Report "  Fichier déplacé vers : $destination"
-                }
-            } catch {
-                Write-Report "NON TRAITÉ OU NON CONFIRMÉ : $($f.Location)" Red
-                Write-Detail "Cause technique du retrait non confirmé : $($_.Exception.Message)"
-                Write-Report 'Si une DLL reste verrouillée, faites vérifier le retrait de sa persistance, redémarrez Windows puis relancez cet outil.' Yellow
-            }
-        }
-    } catch {
-        Write-Report "Nettoyage incomplet : $($_.Exception.Message)"
-    }
-    finally {
-        if ($folder) {
-            try {
-                $script:Report | Set-Content -LiteralPath (Join-Path $folder 'journal-quarantaine.txt') -Encoding UTF8 -ErrorAction Stop
-            }
-            catch {
-                Write-Report 'Le journal de quarantaine n a pas pu être enregistré.'
-            }
-        }
-        Invoke-PostCleanupCheck
-    }
-}
 
 function Get-ConfirmedNikkeFolder([string]$Path) {
     $value = [Environment]::ExpandEnvironmentVariables($Path.Trim().Trim('"'))
@@ -6219,57 +7462,6 @@ function Move-NikkeInstallation([string]$Path) {
     }
 }
 
-function Offer-Uninstall {
-    Write-Host ''
-    Write-Host 'RETIRER LE JEU SANS LANCER SON DÉSINSTALLEUR' -ForegroundColor Cyan
-    Write-Host 'Le dossier sera renommé et mis à l écart à côté de son emplacement actuel, sans effacement définitif.'
-    Write-Host 'Cela retire le jeu de son chemin habituel mais ne libère pas l espace disque et ne nettoie pas tout Windows.'
-    Write-Host 'Fermez NIKKE et ses processus avant de continuer. Ne lancez aucun exécutable de la copie conservée.'
-    $candidates = @(Get-NikkeRemovalCandidates)
-    $root = $null
-    if ($candidates.Count -eq 1) {
-        $root = $candidates[0]
-    }
-    elseif ($candidates.Count -gt 1) {
-        for ($i = 0; $i -lt $candidates.Count; $i++) {
-            Write-Host "  $($i + 1) : $($candidates[$i])"
-        }
-        $choice = Read-Host 'Numéro du dossier à retirer [Entrée = annuler]'
-        if ($choice -notmatch '^\d+$' -or [int]$choice -lt 1 -or [int]$choice -gt $candidates.Count) {
-            return
-        }
-        $root = $candidates[[int]$choice - 1]
-    } else {
-        $path = Read-Host 'Dossier NIKKE ou Launcher [Entrée = annuler si déjà supprimé]'
-        if ([string]::IsNullOrWhiteSpace($path)) {
-            return
-        }
-        try {
-            $root = Get-ConfirmedNikkeFolder $path
-        }
-        catch {
-            Write-Report "Dossier refusé : $($_.Exception.Message)" Yellow
-            return
-        }
-    }
-    Write-Host "Dossier qui sera retiré : $root" -ForegroundColor Yellow
-    Write-Host 'Les journaux connus seront sauvegardés dans un dossier privé avant le déplacement.'
-    if (-not (Confirm-Action 'Confirmer le retrait récupérable de ce dossier de jeu ?')) {
-        Write-Report 'Retrait du jeu refusé : aucun dossier déplacé.'
-        return
-    }
-    try {
-        $result = Move-NikkeInstallation $root
-        Write-Report "JEU RETIRÉ DU CHEMIN INITIAL : $($result.Source)" Green
-        Write-Report "Copie conservée : $($result.Destination)"
-        Write-Report "Journaux et informations de récupération : $($result.Backup)"
-        Write-Report 'Ne restaurez pas ou ne relancez pas cette copie avant les consignes de sécurité officielles.'
-    } catch {
-        Write-Report "RETRAIT NON CONFIRMÉ : $($_.Exception.Message)" Yellow
-    }
-    Invoke-PostCleanupCheck
-    Save-Report
-}
 
 function Offer-OfflineScanHelp {
     Write-Host ''
@@ -6299,7 +7491,7 @@ function Offer-OfflineScanHelp {
     }
 }
 
-function Write-Advice([switch]$Detailed) {
+function Write-Advice([switch]$Detailed, [switch]$ReportOnly) {
     if ($script:AdviceShown -and -not $Detailed) {
         return
     }
@@ -6326,7 +7518,7 @@ function Write-Advice([switch]$Detailed) {
         foreach ($line in $script:Report.GetRange($start, $script:Report.Count - $start)) {
             Write-Host $line
         }
-    } else {
+    } elseif (-not $ReportOnly) {
         Write-Host 'À FAIRE PAR PRÉCAUTION DEPUIS UN APPAREIL SAIN :' -ForegroundColor Cyan
         Write-Host '  Changez vos mots de passe enregistrés ou utilisés sur ce PC, déconnectez les sessions et activez la double authentification.'
         Write-Host '  Une analyse antivirus hors connexion reste conseillée ; cet outil ne la lance pas.'
@@ -6715,103 +7907,154 @@ function Offer-HostsBlock {
 }
 
 
-function Show-Actions {
+function Open-PlayerReport {
+    Save-Report
+    if ($script:ReportPath -and [IO.File]::Exists($script:ReportPath)) {
+        Write-Host "Rapport privé : $script:ReportPath"
+        try {
+            Start-Process -FilePath (Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\notepad.exe') -ArgumentList ('"' + $script:ReportPath + '"') -ErrorAction Stop | Out-Null
+        }
+        catch {
+            Write-Host 'Ouvrez ce fichier dans le Bloc-notes pour lire le rapport.'
+        }
+    }
+}
+
+function Show-AdvancedOptions {
     do {
         Write-Host ''
-        Write-Host '---------------- QUE VOULEZ-VOUS FAIRE ? ----------------'
-        $scope = if ($Mode -eq 'Navigateurs') {
-            $Navigateur
-        } elseif ($Mode -eq 'SansJeu') {
-            'PC après suppression du jeu'
-        } else {
-            'PC et NIKKE'
-        }
-        Write-Host "Contrôle sélectionné : $scope"
-        $cleanable = @(Get-CleanupPlan $script:CurrentSnapshot).Count
-        if ($cleanable -gt 0) {
-            Write-Host "1  Traiter $cleanable trace(s) connue(s), puis revérifier"
-        }
-        else {
-            Write-Host 'Aucun nettoyage automatique proposé pour ce résultat.'
-        }
-        Write-Host "2  Relancer le même contrôle : $scope"
-        Write-Host '3  Changer vos mots de passe : conseils'
-        Write-Host '4  Préparer une analyse Defender hors connexion (aide)'
-        if ($Mode -eq 'Verifier') {
-            Write-Host '5  Retirer le jeu directement (copie récupérable)'
-        }
-        Write-Host '6  Bloquer les domaines signalés dans hosts (facultatif, admin)'
-        Write-Host '7  Supprimer le cache NIKKE (facultatif, après sauvegarde du rapport)'
-        Write-Host 'D  Lire les détails de ce résultat'
-        Write-Host 'P  Indiquer le dossier d un profil, puis revérifier'
-        Write-Host 'B  Retour au menu principal / choisir un autre navigateur'
-        Write-Host '0  Terminer et afficher le bilan final'
-        $choice = (Read-Host 'Votre choix [Entrée = Terminer]').Trim().ToLowerInvariant()
+        Write-Host 'OPTIONS AVANCÉES'
+        Write-Host '1  Vérifier un navigateur au choix'
+        Write-Host '2  Indiquer le dossier du jeu ou de debug.log'
+        Write-Host '3  Indiquer un profil de navigateur personnalisé'
+        Write-Host '4  Conseils pour sécuriser les comptes'
+        Write-Host '5  Bloquer les sites signalés'
+        Write-Host '6  Aide pour une analyse antivirus hors connexion'
+        Write-Host 'H  Comprendre NikkeTrace'
+        Write-Host 'B  Retour'
+        $choice = (Read-Host 'Votre choix').Trim().ToLowerInvariant()
         switch ($choice) {
             '1' {
-                Invoke-TargetedCleanup
-                if ($Mode -eq 'Verifier') {
-                    Offer-Uninstall
+                $selected = Select-Browser
+                if ($selected -ne 'Retour') {
+                    return $selected
                 }
             }
             '2' {
-                Invoke-PostCleanupCheck -OfferBrowserClose
+                $path = Read-Host 'Dossier du jeu ou de debug.log [Entrée = annuler]'
+                if ($path) {
+                    $script:ExtraNikkePath += $path
+                    return 'Tous'
+                }
             }
             '3' {
-                Show-PasswordAdvice
+                [void](Offer-CustomBrowserRoot)
             }
             '4' {
-                Offer-OfflineScanHelp
+                Show-PasswordAdvice
             }
-            '6' {
+            '5' {
                 Offer-HostsBlock
             }
-            '7' {
-                Offer-LauncherCacheRemoval
+            '6' {
+                Offer-OfflineScanHelp
+            }
+            'h' {
+                Show-Help
+            }
+            {
+                $_ -in @('b', '')
+            } {
+                return 'Retour'
+            }
+        }
+    } while ($true)
+}
+
+function Show-Actions {
+    do {
+        Write-Host ''
+        Write-Host '[C] Nettoyage guidé   [V] Revérifier   [R] Rapport   [D] Détails   [A] Options avancées   [Q] Quitter'
+        $choice = (Read-Host 'Votre choix [Entrée = Quitter]').Trim().ToLowerInvariant()
+        switch ($choice) {
+            'c' {
+                if ((Invoke-GuidedCleanup) -eq 'RestartRequired') {
+                    return 'RestartRequired'
+                }
+            }
+            'v' {
+                return 'Recheck'
+            }
+            'r' {
+                Open-PlayerReport
             }
             'd' {
                 Show-ResultDetails
             }
-            'p' {
-                if (Offer-CustomBrowserRoot) {
-                    Invoke-PostCleanupCheck
-                }
-            }
-            '5' {
-                if ($Mode -eq 'Verifier') {
-                    Offer-Uninstall
-                } else {
-                    Write-Host 'Cette option est disponible depuis le contrôle complet.'
+            'a' {
+                $selected = Show-AdvancedOptions
+                if ($selected -ne 'Retour') {
+                    $script:NextBrowser = $selected
+                    return 'Recheck'
                 }
             }
             'b' {
                 return 'Retour'
             }
             {
-                $_ -in @('', '0')
+                $_ -in @('', 'q', '0')
             } {
                 return 'Quitter'
             }
             default {
-                Write-Host 'Choisissez un numéro de la liste.'
+                Write-Host 'Choisissez une lettre de la liste.'
             }
         }
     } while ($true)
+}
+
+
+function Get-ReadableReport {
+    Convert-UiText 'NIKKETRACE 3.0 — RAPPORT PRIVÉ'
+    if ($null -ne $script:CurrentSnapshot -and $null -ne $script:CurrentSnapshot.PSObject.Properties['Checks']) {
+        foreach ($line in @(Get-PlayerSummary $script:CurrentSnapshot)) {
+            Convert-UiText $line
+        }
+        foreach ($check in $script:CurrentSnapshot.Checks) {
+            if ($check.State -eq 'Partiel') {
+                Convert-UiText ('Contrôle incomplet : ' + $check.Name)
+                if ($null -ne $check.PSObject.Properties['Reasons']) {
+                    foreach ($reason in $check.Reasons) {
+                        Convert-UiText ('  Raison : ' + $reason)
+                    }
+                }
+                Convert-UiText '  Conseil : fermez les applications concernées et relancez le contrôle. Si la limite persiste, demandez de l aide avec ce rapport.'
+            }
+        }
+    }
+    ''
+    Convert-UiText 'DÉTAILS TECHNIQUES ET HISTORIQUE DES ACTIONS'
+    foreach ($line in $script:Report) {
+        $line
+    }
+    foreach ($action in $script:CleanupOutcomes) {
+        Convert-UiText ("$($action.Outcome) — $($action.Label) : $($action.Location)")
+    }
 }
 
 function Save-Report {
     param([switch]$Required)
     if (-not $script:ReportPath) {
         $filename = 'Bilan-NIKKE-{0}-{1}.txt' -f (Get-Date -Format 'yyyyMMdd-HHmmss'), ([guid]::NewGuid().ToString('N').Substring(0, 6))
-        $script:ReportPath = Join-Path (Join-Path ([IO.Path]::GetDirectoryName($LauncherPath)) 'Rapports-NIKKE') $filename
+        $script:ReportPath = Join-Path (Join-Path $env:LOCALAPPDATA 'NIKKE-Assistance\Reports') $filename
     }
     try {
         [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($script:ReportPath))
-        $script:Report | Set-Content -LiteralPath $script:ReportPath -Encoding UTF8 -ErrorAction Stop
+        Get-ReadableReport | Set-Content -LiteralPath $script:ReportPath -Encoding UTF8 -ErrorAction Stop
     } catch {
         try {
             $script:ReportPath = Join-Path $env:TEMP ([IO.Path]::GetFileName($script:ReportPath))
-            $script:Report | Set-Content -LiteralPath $script:ReportPath -Encoding UTF8 -ErrorAction Stop
+            Get-ReadableReport | Set-Content -LiteralPath $script:ReportPath -Encoding UTF8 -ErrorAction Stop
         } catch {
             if ($Required) {
                 throw 'La sauvegarde du rapport a échoué.'
@@ -6825,152 +8068,103 @@ function Save-Report {
 function Invoke-NikkeCheck {
     Initialize-Report
     $script:HistoricalExposure = $script:SessionExposure
-    if (-not $NoPrompt -and -not [Console]::IsOutputRedirected) {
-        try {
-            [Console]::Clear()
-        } catch {}
-    }
     Write-Host ''
-    Write-Host '========================================================'
-    Write-Host ' NikkeTrace — FR — VERSION 2.7' -ForegroundColor Cyan
-    Write-Host '========================================================'
-    Write-Host 'Vérification locale. Aucun nettoyage sans votre accord.'
-    Write-Host 'Contrôle ciblé de cet incident, pas une analyse antivirus du PC.'
+    Write-Host 'NIKKETRACE — VERSION 3.0 — WINDOWS' -ForegroundColor Cyan
+    Write-Host 'Vérification des traces connues de cet incident, sans diagnostic antivirus complet.'
+    Write-Host 'Avant de commencer : déconnectez ce PC d Internet, fermez NIKKE, son lanceur et les navigateurs. Vérifiez aussi les icônes près de l horloge.'
+    Write-Host 'Le contrôle reste possible si le jeu a déjà été désinstallé. Ne le réinstallez pas pour cette vérification.'
     if (-not $NoPrompt) {
-        Write-Host 'Par précaution : changez vos mots de passe depuis un appareil sain (conseils : option 5).' -ForegroundColor Yellow
-        Write-Host 'Avant une vérification : fermez NIKKE et son launcher.'
-        Write-Host 'Enregistrez vos travaux et fermez les navigateurs si possible, surtout avant un nettoyage.'
-        Write-Host 'La recherche peut continuer avec un navigateur ouvert. Aucun programme ne sera fermé de force.'
         do {
             Write-Host ''
-            Write-Host '1  Rechercher les traces connues de l incident NIKKE'
-            Write-Host '2  Jeu déjà supprimé : vérifier les traces restantes'
-            Write-Host '3  Contrôle d''un navigateur au choix'
-            Write-Host '4  Comprendre l outil'
-            Write-Host '5  Changer vos mots de passe : conseils'
-            Write-Host '6  Bloquer les domaines signalés (facultatif, admin)'
-            Write-Host '7  Supprimer le cache NIKKE (facultatif, après sauvegarde du rapport)'
+            Write-Host '1  Vérification complète et nettoyage guidé (recommandé)'
+            Write-Host 'A  Options avancées'
             Write-Host '0  Quitter'
-            $choice = (Read-Host 'Votre choix [Entrée = 1]').Trim()
-            if ($choice -eq '0') {
+            $choice = (Read-Host 'Votre choix [Entrée = 1]').Trim().ToLowerInvariant()
+            if ($choice -in @('0', 'q')) {
                 return 'Quitter'
             }
-            if ($choice -eq '4') {
-                Show-Help
-            }
-            if ($choice -eq '5') {
-                Show-PasswordAdvice
-                Save-Report
-            }
-            if ($choice -eq '6') {
-                Offer-HostsBlock
-            }
-            if ($choice -eq '7') {
-                Offer-LauncherCacheRemoval
-            }
-            if ($choice -eq '3') {
-                $selectedBrowser = Select-Browser
-                if ($selectedBrowser -eq 'Retour') {
-                    $choice = 'Retour'
+            if ($choice -eq 'a') {
+                $selected = Show-AdvancedOptions
+                if ($selected -ne 'Retour') {
+                    $script:NextBrowser = $selected
+                    $choice = '1'
                 }
             }
-        } while ($choice -notin @('', '1', '2', '3'))
-        if ($choice -eq '3') {
-            $Mode = 'Navigateurs'
-            $Navigateur = $selectedBrowser
-        }
-        elseif ($choice -eq '2') {
-            $Mode = 'SansJeu'
-            $Navigateur = 'Tous'
-        }
-        else {
-            $Mode = 'Verifier'
-            $Navigateur = 'Tous'
-        }
+        } while ($choice -notin @('', '1'))
+        $Mode = 'Verifier'
+        $Navigateur = 'Tous'
     }
-    Write-Detail "NikkeTrace 2.7 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
-    Write-Detail 'Signatures non validées ici sur un échantillon réel. Aucune extraction des mots de passe, cookies ou jetons.'
-    Write-Detail 'Une empreinte DLL différente ne suffit pas à exclure cette attaque : la DLL peut varier selon la victime.'
-    Write-Detail 'Contrôles TCP/DNS locaux ; blocage des domaines dans hosts uniquement sur accord explicite.'
-    Write-Detail 'Compte courant, profils usuels et registre HKCU/HKLM 32/64 ; CLSID Windows HKLM légitime exclu.'
-    Write-Detail 'Journaux : profondeur 8 niveaux ; navigateurs : 65 niveaux ; limite de 12000 dossiers par racine, caches exclus et liens/jonctions ignorés.'
-    Write-Detail 'Fichiers renommés, variantes inconnues, profils personnalisés non indiqués et autres comptes non couverts.'
-    if ($Mode -in @('Verifier', 'SansJeu')) {
-        $script:QuietScan = $true
-        try {
-            $locations = @(Get-NikkeResidualPaths) + $NikkePath
-            if ($Mode -eq 'Verifier') {
+    do {
+        if ($script:NextBrowser) {
+            $Navigateur = $script:NextBrowser
+            $Mode = if ($Navigateur -eq 'Tous') {
+                'Verifier'
+            } else {
+                'Navigateurs'
+            }
+            $script:NextBrowser = $null
+        }
+        Write-Detail "NikkeTrace 3.0 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
+        if ($Mode -ne 'Navigateurs') {
+            $script:QuietScan = $true
+            try {
+                $locations = @(Get-NikkeResidualPaths) + $NikkePath + $script:ExtraNikkePath
                 try {
                     $locations += @(Get-NikkeInstallPaths)
                 }
                 catch {
-                    Add-Issue 'Recherche de l installation incomplète : les contrôles hors du jeu continuent.'
+                    Add-Issue 'Installation non localisée : les autres contrôles continuent.'
                 }
-            }
-            $script:ScanPaths = @($locations | Where-Object {
-                    $_
-                } | Sort-Object -Unique)
-            $script:DiscoveryIssues = @($script:Issues.ToArray())
-        } finally {
-            $script:QuietScan = $false
-        }
-    }
-    if (-not $NoPrompt) {
-        Offer-BrowserClosure -Scope $Navigateur
-    }
-    Write-Host 'Vérification en cours... merci de patienter.'
-    $script:CurrentSnapshot = Invoke-TraceScan
-    if ($Mode -eq 'Verifier' -and $script:CurrentSnapshot.LogsRead -eq 0 -and -not $NoPrompt) {
-        Write-Host 'Aucun journal du jeu trouvé. Les navigateurs, le registre et les temporaires ont quand même été contrôlés.'
-        if (Confirm-Action 'Avez-vous déjà supprimé ou désinstallé NIKKE ?') {
-            $Mode = 'SansJeu'
-            $script:ScanPaths = @(@(Get-NikkeResidualPaths) + $NikkePath | Where-Object {
-                    $_
-                } | Sort-Object -Unique)
-            $script:DiscoveryIssues = @()
-            Write-Report 'Jeu déclaré déjà supprimé : poursuite du contrôle sans installation du jeu.'
-            $script:CurrentSnapshot = Invoke-TraceScan
-        } elseif (Confirm-Action 'Voulez-vous indiquer un dossier ou le chemin de debug.log ?') {
-            $path = Read-Host 'Coller le chemin du dossier NIKKE/Launcher ou de debug.log'
-            if (-not [string]::IsNullOrWhiteSpace($path)) {
-                $script:ScanPaths += $path
-                $script:CurrentSnapshot = Invoke-TraceScan
+                $script:ScanPaths = @($locations | Where-Object {
+                        $_
+                    } | Sort-Object -Unique)
+                $script:DiscoveryIssues = @($script:Issues.ToArray())
+            } finally {
+                $script:QuietScan = $false
             }
         }
-    }
-    Show-Snapshot $script:CurrentSnapshot
-    Show-AccountPriority
-    Save-Report
-    if ($script:CurrentSnapshot.Findings.Count -gt 0) {
-        Write-Host 'En cas de doute sérieux : couper Ethernet/Wi-Fi, ne pas relancer le jeu et ne plus saisir de secrets sur ce PC.'
-    }
-    if (-not $NoPrompt) {
+        if (-not $NoPrompt) {
+            Offer-BrowserClosure -Scope $Navigateur
+        }
+        Write-Host 'Vérification en cours... merci de patienter.'
+        $script:CurrentSnapshot = Invoke-TraceScan
+        Show-Snapshot $script:CurrentSnapshot
+        Save-Report
+        if (-not $NoPrompt) {
+            $cleanupResult = Invoke-GuidedCleanup
+            if ($cleanupResult -eq 'Failed') {
+                Show-Snapshot $script:CurrentSnapshot
+            }
+            if ($cleanupResult -eq 'RestartRequired') {
+                Show-Snapshot $script:CurrentSnapshot
+                Write-Advice -ReportOnly
+                Save-Report
+                Write-Host "Rapport privé : $script:ReportPath"
+                [void](Read-Host 'Appuyez sur Entrée pour fermer, puis redémarrez Windows')
+                return 'Quitter'
+            }
+        }
+        Write-Advice -ReportOnly
+        Save-Report
+        if ($NoPrompt) {
+            return 'Quitter'
+        }
         $navigation = Show-Actions
+        if ($navigation -eq 'RestartRequired') {
+            [void](Read-Host 'Appuyez sur Entrée pour fermer, puis redémarrez Windows')
+            return 'Quitter'
+        }
         if ($navigation -eq 'Retour') {
             Save-Report
-            Write-Host "Bilan de ce contrôle enregistré : $script:ReportPath"
             return 'Retour'
         }
-    }
-    Write-Report ''
-    Write-Detail '==================== BILAN FINAL ===================='
-    $finished = if ($Mode -eq 'Navigateurs') {
-        $Navigateur
-    } elseif ($Mode -eq 'SansJeu') {
-        'PC après suppression de NIKKE'
-    } else {
-        'NIKKE et PC'
-    }
-    Write-Report "Contrôle terminé — $finished" Cyan
-    Write-Advice
+    } while ($navigation -eq 'Recheck')
     Save-Report
-    Write-Host "Bilan privé enregistré : $script:ReportPath"
-    Write-Host 'Ne publiez pas le rapport brut : il peut contenir votre nom Windows dans les chemins.'
-    if (-not $NoPrompt) {
-        [void](Read-Host 'Appuyez sur Entrée pour fermer')
-    }
+    Write-Host "Rapport privé : $script:ReportPath"
+    Write-Host 'Avant de partager ce rapport, masquez les informations personnelles dans les chemins.'
     return 'Quitter'
 }
+
 
 if ($MyInvocation.InvocationName -ne '.') {
     try {

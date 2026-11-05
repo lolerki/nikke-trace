@@ -6,6 +6,7 @@ import zipfile
 root = Path(__file__).resolve().parent
 source = root / 'NikkeTrace.ps1'
 payload = source.read_text(encoding='utf-8-sig').replace('\r\n', '\n')
+assert (root / 'LICENSE').read_text().strip() in payload
 bootstrap = (
     "$ErrorActionPreference='Stop'; "
     "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); "

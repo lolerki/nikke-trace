@@ -37,6 +37,7 @@ try {
     }
     $LauncherPath = Join-Path $fixture 'NikkeTrace.cmd'
     Initialize-Report
+    function Get-NikkeRemovalCandidates { @() }
     Initialize-CacheReader
     foreach ($name in @('prefix', 'snappy0', 'snappy1', 'snappy2', 'snappy3')) {
         $result = [NikkeTrace.CacheReader27]::Inspect([Convert]::FromBase64String($vectors[$name]), $true)
@@ -140,7 +141,7 @@ try {
         $script:answers.Dequeue()
     }
     $script:answers.Enqueue('n')
-    Offer-LauncherCacheRemoval
+    [void](Invoke-GuidedCleanup)
     Assert ((Test-Path -LiteralPath $loader) -and (Test-Path -LiteralPath $script:ReportPath)) 'declined deletion keeps cache and saves report before consent'
     Assert (([IO.File]::ReadAllText($script:ReportPath)) -match 'k2f.agent.state' -and ([IO.File]::ReadAllText($script:ReportPath)) -notmatch 'PRIVATE-DO-NOT-REPORT') 'saved report preserves indicators without their secret values'
     function Get-Process {
@@ -151,7 +152,7 @@ try {
     }
     $shown.Clear()
     $script:answers.Enqueue('y')
-    Offer-LauncherCacheRemoval
+    [void](Invoke-GuidedCleanup)
     Assert ((Test-Path -LiteralPath $loader) -and @($shown | Where-Object {
                 $_.Color -eq 'Green'
             }).Count -eq 0) 'running launcher blocks deletion without a green success message'
@@ -175,14 +176,14 @@ try {
     [IO.Directory]::Delete($junction,$false)
     $shown.Clear()
     $script:answers.Enqueue('y')
-    Offer-LauncherCacheRemoval
+    [void](Invoke-GuidedCleanup)
     Assert (-not (Test-Path -LiteralPath $root) -and -not (Test-Path -LiteralPath $roots[2])) 'confirmed deletion removes only the existing NIKKE caches'
     Assert ((Get-FileHash -LiteralPath $cefTrace).Hash -ceq $cefHash -and (Get-FileHash -LiteralPath $cefLogins).Hash -ceq $loginHash -and (Test-Path -LiteralPath $keep)) 'CEF profile, its credentials database and other application stay intact'
     Assert (@(Get-ChildItem -LiteralPath (Split-Path $root) -Filter '*.NikkeTrace-delete-*').Count -eq 0) 'successful deletion leaves no staging copy'
-    Assert (($shown.Text -join "`n") -match 'TRACES STILL PRESENT' -and ($shown.Text -join "`n") -match 'CEF') 'post-deletion summary retains shared CEF trace for review'
+    Assert (@($script:CurrentSnapshot.Findings | Where-Object { $_.Target.SharedCache }).Count -eq 1 -and ($shown.Text -join "`n") -match 'historical trace') 'post-deletion result retains the shared profile trace without requiring technical knowledge'
     Assert ($script:HistoricalExposure -and $script:SessionExposure) 'deleting cache does not erase the prior exposure warning'
     Assert (@($shown | Where-Object {
-                $_.Color -eq 'Green' -and $_.Text -match 'DELETED AND ABSENCE CONFIRMED'
+                $_.Color -eq 'Green' -and $_.Text -match 'cache deleted; absence confirmed'
             }).Count -eq 2) 'success is reported separately for each verified deleted cache'
     [void][IO.Directory]::CreateDirectory($code)
     [IO.File]::WriteAllText($loader,'https://insightjs.com/')
@@ -191,7 +192,7 @@ try {
         param([switch]$Required) throw 'Simulated report failure'
     }
     $shown.Clear()
-    Offer-LauncherCacheRemoval
+    [void](Invoke-GuidedCleanup)
     Assert ((Test-Path -LiteralPath $loader) -and $answers.Count -eq 0 -and ($shown.Text -join "`n") -match 'Report not saved') 'report failure prevents even asking for destructive consent'
     Set-Item Function:\Save-Report -Value $savedSave
     $script:CurrentSnapshot=Invoke-CacheSnapshot
@@ -199,7 +200,7 @@ try {
     try {
         $shown.Clear()
         $answers.Enqueue('y')
-        Offer-LauncherCacheRemoval
+        [void](Invoke-GuidedCleanup)
         Assert ((Test-Path -LiteralPath $loader) -and @($shown | Where-Object {
                     $_.Color -eq 'Green'
                 }).Count -eq 0) 'locked cache file prevents confirmed deletion and never produces a green result'
@@ -217,26 +218,6 @@ try {
     Assert ((Convert-UiText 'Supprimer définitivement ces caches NIKKE ?') -eq 'Supprimer définitivement ces caches NIKKE ?') 'French destructive confirmation stays available'
     $script:Language='en'
     Assert ((Convert-UiText 'Supprimer définitivement ces caches NIKKE ?') -eq 'Permanently delete these NIKKE launcher caches?') 'English destructive confirmation is explicit'
-    $script:cacheOffers=0
-    function Offer-LauncherCacheRemoval {
-        $script:cacheOffers++
-    }
-    function Invoke-TraceScan {
-        throw 'Unexpected full scan'
-    }
-    function Read-Host {
-        param($Prompt) $script:answers.Dequeue()
-    }
-    $NoPrompt=$false
-    $answers.Enqueue('7')
-    $answers.Enqueue('0')
-    Assert ((Invoke-NikkeCheck) -eq 'Quitter' -and $cacheOffers -eq 1) 'main menu reaches optional cache deletion and returns without a full scan'
-    $script:CurrentSnapshot=[pscustomobject]@{
-        Findings=@()
-    }
-    $answers.Enqueue('7')
-    $answers.Enqueue('b')
-    Assert ((Show-Actions) -eq 'Retour' -and $cacheOffers -eq 2) 'result menu reaches the same separately confirmed cache deletion'
     Microsoft.PowerShell.Utility\Write-Host "SUCCESS: $checks cache detection and deletion checks on inert fixtures only."
 } finally {
     $env:LOCALAPPDATA = $oldLocal
