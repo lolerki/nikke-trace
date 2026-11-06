@@ -3611,9 +3611,9 @@ $script:UiCatalog = @'
         "Weight": 36
     },
     {
-        "French": "NIKKE assistance 3.1 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
-        "Pattern": "^NIKKE\\ assistance\\ 3\\.1\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
-        "English": "NIKKE assistance 3.1 — {0} — Mode: {1} / {2}",
+        "French": "NIKKE assistance 3.2 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur",
+        "Pattern": "^NIKKE\\ assistance\\ 3\\.2\\ —\\ (?<v0>.*?)\\ —\\ Mode\\ :\\ (?<v1>.*?)\\ /\\ (?<v2>.*?)$",
+        "English": "NIKKE assistance 3.2 — {0} — Mode: {1} / {2}",
         "Count": 3,
         "Weight": 36
     },
@@ -3744,9 +3744,9 @@ $script:UiCatalog = @'
         "Weight": 34
     },
     {
-        "French": "NIKKETRACE — VERSION 3.1 — WINDOWS",
-        "Pattern": "^NIKKETRACE\\ —\\ VERSION\\ 3\\.1\\ —\\ WINDOWS$",
-        "English": "NIKKETRACE — VERSION 3.1 — WINDOWS",
+        "French": "NIKKETRACE — VERSION 3.2 — WINDOWS",
+        "Pattern": "^NIKKETRACE\\ —\\ VERSION\\ 3\\.2\\ —\\ WINDOWS$",
+        "English": "NIKKETRACE — VERSION 3.2 — WINDOWS",
         "Count": 0,
         "Weight": 34
     },
@@ -3856,6 +3856,13 @@ $script:UiCatalog = @'
         "Weight": 33
     },
     {
+        "French": "Fichier suspect utilisé par Steam",
+        "Pattern": "^Fichier\\ suspect\\ utilisé\\ par\\ Steam$",
+        "English": "Suspicious file used by Steam",
+        "Count": 0,
+        "Weight": 33
+    },
+    {
         "French": "  $Label : aucun marqueur connu trouvé",
         "Pattern": "^\\ \\ (?<v0>.*?)\\ :\\ aucun\\ marqueur\\ connu\\ trouvé$",
         "English": "  {0}: no known indicator found",
@@ -3894,6 +3901,13 @@ $script:UiCatalog = @'
         "French": "Blocages des sites déjà présents",
         "Pattern": "^Blocages\\ des\\ sites\\ déjà\\ présents$",
         "English": "Existing website blocks",
+        "Count": 0,
+        "Weight": 32
+    },
+    {
+        "French": "Fichier suspect utilisé par Alt1",
+        "Pattern": "^Fichier\\ suspect\\ utilisé\\ par\\ Alt1$",
+        "English": "Suspicious file used by Alt1",
         "Count": 0,
         "Weight": 32
     },
@@ -3975,9 +3989,9 @@ $script:UiCatalog = @'
         "Weight": 31
     },
     {
-        "French": " NikkeTrace — FR — VERSION 3.1",
-        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.1$",
-        "English": " NikkeTrace — EN — VERSION 3.1",
+        "French": " NikkeTrace — FR — VERSION 3.2",
+        "Pattern": "^\\ NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.2$",
+        "English": " NikkeTrace — EN — VERSION 3.2",
         "Count": 0,
         "Weight": 30
     },
@@ -4031,9 +4045,9 @@ $script:UiCatalog = @'
         "Weight": 30
     },
     {
-        "French": "NIKKETRACE 3.1 — RAPPORT PRIVÉ",
-        "Pattern": "^NIKKETRACE\\ 3\\.1\\ —\\ RAPPORT\\ PRIVÉ$",
-        "English": "NIKKETRACE 3.1 — PRIVATE REPORT",
+        "French": "NIKKETRACE 3.2 — RAPPORT PRIVÉ",
+        "Pattern": "^NIKKETRACE\\ 3\\.2\\ —\\ RAPPORT\\ PRIVÉ$",
+        "English": "NIKKETRACE 3.2 — PRIVATE REPORT",
         "Count": 0,
         "Weight": 30
     },
@@ -4066,9 +4080,9 @@ $script:UiCatalog = @'
         "Weight": 29
     },
     {
-        "French": "NikkeTrace — FR — VERSION 3.1",
-        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.1$",
-        "English": "NikkeTrace — EN — VERSION 3.1",
+        "French": "NikkeTrace — FR — VERSION 3.2",
+        "Pattern": "^NikkeTrace\\ —\\ FR\\ —\\ VERSION\\ 3\\.2$",
+        "English": "NikkeTrace — EN — VERSION 3.2",
         "Count": 0,
         "Weight": 29
     },
@@ -7156,7 +7170,7 @@ function Get-AdditionalChromeRoots {
 
 function Get-SessionProcesses {
     $session = [Diagnostics.Process]::GetCurrentProcess().SessionId
-    $names = @('nikke', 'nikke_launcher', 'nikke_launcher_hmt', 'nikke_launcher_google', 'tbs_browser', 'chrome', 'msedge', 'firefox', 'brave', 'opera', 'vivaldi')
+    $names = @('nikke', 'nikke_launcher', 'nikke_launcher_hmt', 'nikke_launcher_google', 'tbs_browser', 'chrome', 'msedge', 'firefox', 'brave', 'opera', 'vivaldi', 'steamwebhelper', 'runeapps.alt1')
     Get-Process -ErrorAction Stop | Where-Object {
         $_.SessionId -eq $session -and $_.ProcessName -in $names
     }
@@ -7196,10 +7210,11 @@ function Test-LoadedModules {
                 }
                 $evidence = Get-DllHashEvidence $module.FileName
                 $strong = $evidence.Known -or (Test-KnownChromeDllPath $module.FileName)
-                Add-Finding 'DLL homonyme chargée dans un processus : vérifier le chemin et l empreinte' "PID $processNumber — $($module.FileName)" $strong 'Observation' @{
+                Add-Finding 'DLL homonyme chargée dans un processus : vérifier le chemin et l empreinte' "PID $processNumber — $($process.ProcessName) — $($module.FileName)" $strong 'Observation' @{
                     Area = 'Modules'
                     Path = $module.FileName
                     ProcessId = $processNumber
+                    ProcessName = $process.ProcessName
                     Sha256 = $evidence.Hash
                     KnownDllHash = $evidence.Known
                 }
@@ -7763,6 +7778,12 @@ function Get-FindingArea($Finding) {
 }
 
 function Get-FindingLabel($Finding) {
+    if ($Finding.Target.ContainsKey('Area') -and $Finding.Target.Area -eq 'Modules' -and $Finding.Target.ContainsKey('ProcessName')) {
+        switch ($Finding.Target.ProcessName) {
+            'steamwebhelper' { return 'Fichier suspect utilisé par Steam' }
+            'runeapps.alt1' { return 'Fichier suspect utilisé par Alt1' }
+        }
+    }
     if ($Finding.Type -eq 'Historique') {
         if ($Finding.Target.ContainsKey('Marker')) {
             $marker = if ($Finding.Target.ContainsKey('Evidence')) {
@@ -9445,7 +9466,7 @@ function Show-Actions {
 
 
 function Get-ReadableReport {
-    Convert-UiText 'NIKKETRACE 3.1 — RAPPORT PRIVÉ'
+    Convert-UiText 'NIKKETRACE 3.2 — RAPPORT PRIVÉ'
     if ($null -ne $script:CurrentSnapshot -and $null -ne $script:CurrentSnapshot.PSObject.Properties['Checks']) {
         foreach ($line in @(Get-PlayerSummary $script:CurrentSnapshot)) {
             Convert-UiText $line
@@ -9504,7 +9525,7 @@ function Invoke-NikkeCheck {
     $offerDomainBlock = $false
     $script:HistoricalExposure = $script:SessionExposure
     Write-Host ''
-    Write-Host 'NIKKETRACE — VERSION 3.1 — WINDOWS' -ForegroundColor Cyan
+    Write-Host 'NIKKETRACE — VERSION 3.2 — WINDOWS' -ForegroundColor Cyan
     Write-Host 'Vérification des traces connues de cet incident, sans diagnostic antivirus complet.'
     Write-Host 'Avant de commencer : déconnectez ce PC d Internet, fermez NIKKE, son lanceur et les navigateurs. Vérifiez aussi les icônes près de l horloge.'
     Write-Host 'Le contrôle reste possible si le jeu a déjà été désinstallé. Ne le réinstallez pas pour cette vérification.'
@@ -9548,7 +9569,7 @@ function Invoke-NikkeCheck {
             }
             $script:NextBrowser = $null
         }
-        Write-Detail "NikkeTrace 3.1 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
+        Write-Detail "NikkeTrace 3.2 — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz') — Mode : $Mode / $Navigateur"
         if ($Mode -ne 'Navigateurs') {
             $script:QuietScan = $true
             try {

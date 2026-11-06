@@ -8,11 +8,11 @@ NikkeTrace is a community tool for Windows 10/11 with Windows PowerShell 5.1. Th
 
 ![Launcher browser Internet access menu](docs/images/launcher-browser-menu.png)
 
-*Menu example captured before the v3.1 version update. The same controls are available in v3.1.*
+*Menu example captured before the v3.2 version update. The same controls are available in v3.2.*
 
 ## Run
 
-1. Download `nikke-trace-v3.1.zip` from the [latest release](https://github.com/lolerki/nikke-trace/releases/latest).
+1. Download `nikke-trace-v3.2.zip` from the [latest release](https://github.com/lolerki/nikke-trace/releases/latest).
 2. Extract the ZIP, then double-click `NikkeTrace.cmd` on your Windows PC.
 3. Press Enter for English, or choose `2` for French.
 4. Disconnect the PC from the Internet and close the game, launcher and browsers, including tray icons near the clock.
@@ -39,6 +39,7 @@ The private report records the current group before it starts and the duration o
 ## What it does
 
 - Checks known launcher log and cache markers, browser locations, registry entries, temporary files, and selected local process/network indicators.
+- Checks for the known persistence DLL inside running Steam WebHelper and RuneApps Alt1 processes in the current Windows session. Absent or closed applications are silently skipped. Genuine read failures remain incomplete checks.
 - Supports Chrome, Edge, Firefox, Brave, Opera and Vivaldi, with an option to specify a custom profile location.
 - Separates current artifacts from historical exposure. Green requires completed checks with no known traces; incomplete checks cannot produce a green negative result. No result certifies that the PC is clean.
 - Offers one guided cleanup with consent, integrating recognized artifacts, old NikkeTrace file copies and launcher cache reset. It then checks again and reports confirmed actions, failures and remaining traces.

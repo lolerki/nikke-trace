@@ -140,6 +140,62 @@ try {
     $blocked = $false
     try { Assert-LauncherClosed } catch { $blocked = $true }
     Assert $blocked 'running alternate launchers still block cache deletion'
+    $script:running = @()
+    $script:moduleChecks = 0
+    $script:moduleFailure = $false
+    function Get-Process { param($ErrorAction) $script:running }
+    function Get-ProcessModuleRows($Process) {
+        $script:moduleChecks++
+        if ($script:moduleFailure) { throw 'INERT MODULE READ FAILURE' }
+        $Process.TestModules
+    }
+    Initialize-Report
+    $shown.Clear()
+    $absent = Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' { Test-LoadedModules }
+    Assert ($absent.State -eq 'Effectué' -and $script:Issues.Count -eq 0 -and $script:Findings.Count -eq 0 -and $script:moduleChecks -eq 0 -and @($shown | Where-Object { $_ -match '(?i)Steam|Alt1|incomplete|unavailable|warning|error' }).Count -eq 0) 'Steam and Alt1 absent produces a completed check without optional-application warnings or module access'
+
+    $cleanModule = [pscustomobject]@{ ModuleName = 'kernel32.dll'; FileName = 'UNREAD INERT PATH' }
+    $script:running = @([pscustomobject]@{ Id = 100; ProcessName = 'notepad'; SessionId = $script:session; TestModules = @($cleanModule) })
+    Initialize-Report
+    $shown.Clear()
+    $closed = Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' { Test-LoadedModules }
+    Assert ($closed.State -eq 'Effectué' -and $script:Issues.Count -eq 0 -and @($shown | Where-Object { $_ -match '(?i)Steam|Alt1|incomplete|unavailable|warning|error' }).Count -eq 0 -and $script:moduleChecks -eq 0) 'closed optional applications are silently skipped while unrelated programs are running'
+
+    foreach ($name in @('steamwebhelper', 'runeapps.alt1')) {
+        $script:running = @([pscustomobject]@{ Id = 101; ProcessName = $name; SessionId = $script:session; TestModules = @($cleanModule) })
+        $script:moduleChecks = 0
+        Initialize-Report
+        $shown.Clear()
+        $clean = Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' { Test-LoadedModules }
+        Assert ($clean.State -eq 'Effectué' -and $script:Issues.Count -eq 0 -and $script:Findings.Count -eq 0 -and @($shown | Where-Object { $_ -match '(?i)Steam|Alt1|incomplete|unavailable|warning|error' }).Count -eq 0 -and $script:moduleChecks -eq 1) "clean running application is checked without warnings: $name"
+    }
+
+    $dll = Join-Path $env:LOCALAPPDATA ('Google\Chrome\User Data\PlatformExperienceHelper\' + ('e' * 64) + '\platform_experience_helper.dll')
+    [void][IO.Directory]::CreateDirectory((Split-Path $dll))
+    [IO.File]::WriteAllText($dll, 'INERT KNOWN-PATH DLL TEST CONTENT')
+    $suspectModule = [pscustomobject]@{ ModuleName = 'platform_experience_helper.dll'; FileName = $dll }
+    $script:running = @(
+        [pscustomobject]@{ Id = 201; ProcessName = 'steamwebhelper'; SessionId = $script:session; TestModules = @($suspectModule) },
+        [pscustomobject]@{ Id = 202; ProcessName = 'runeapps.alt1'; SessionId = $script:session; TestModules = @($suspectModule) },
+        [pscustomobject]@{ Id = 203; ProcessName = 'steamwebhelper'; SessionId = $script:session + 1; TestModules = @($suspectModule) },
+        [pscustomobject]@{ Id = 204; ProcessName = 'notepad'; SessionId = $script:session; TestModules = @($suspectModule) }
+    )
+    Initialize-Report
+    $script:moduleChecks = 0
+    $detected = Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' { Test-LoadedModules }
+    Assert ($detected.State -eq 'Effectué' -and $script:moduleChecks -eq 2 -and $script:Findings.Count -eq 2 -and @($script:Findings | Where-Object { $_.Strong -and $_.Target.Area -eq 'Modules' }).Count -eq 2) 'both new applications detect the DLL while other sessions and unrelated programs remain outside scope'
+    Assert ((Convert-UiText (Get-FindingLabel $script:Findings[0])) -eq 'Suspicious file used by Steam' -and (Convert-UiText (Get-FindingLabel $script:Findings[1])) -eq 'Suspicious file used by Alt1') 'findings identify Steam and Alt1 in plain English'
+    $script:Language = 'fr'
+    Assert ((Get-FindingLabel $script:Findings[0]) -eq 'Fichier suspect utilisé par Steam' -and (Get-FindingLabel $script:Findings[1]) -eq 'Fichier suspect utilisé par Alt1') 'French finding labels stay short and understandable'
+    $script:Language = 'en'
+    Assert (@(Get-CleanupPlan ([pscustomobject]@{ Findings = @($script:Findings.ToArray()) })).Count -eq 0 -and (Test-Path -LiteralPath $dll)) 'loaded-module observation alone does not add deletion targets or change the file'
+
+    $script:running = @([pscustomobject]@{ Id = 301; ProcessName = 'steamwebhelper'; SessionId = $script:session; TestModules = @($cleanModule) })
+    $script:moduleFailure = $true
+    Initialize-Report
+    $failed = Invoke-IndependentCheck 'Programmes en cours (DLL chargées)' { Test-LoadedModules }
+    Assert ($failed.State -eq 'Partiel' -and $script:Issues.Count -gt 0 -and $script:Findings.Count -eq 0) 'a real module read failure remains incomplete and does not claim an infection or a clean result'
+
     Microsoft.PowerShell.Utility\Write-Host "SUCCESS: $checks completion checks on inert fixtures only."
 } finally {
     $env:LOCALAPPDATA = $oldLocal

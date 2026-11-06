@@ -167,7 +167,7 @@ try {
     Assert ($scanCalls -eq 1) 'cleanup automatically performs a fresh final check'
     Assert (($shown.Text -join "`n") -match 'precaution') 'cache presence is not described as an infection'
     $report=[IO.File]::ReadAllText($script:ReportPath)
-    Assert ($report.StartsWith('NIKKETRACE 3.1') -and $report -match 'Completed checks: 9' -and $report -match 'Confirmed actions: 1') 'report starts with a player-readable final summary and action counts'
+    Assert ($report.StartsWith('NIKKETRACE 3.2') -and $report -match 'Completed checks: 9' -and $report -match 'Confirmed actions: 1') 'report starts with a player-readable final summary and action counts'
     Assert (($report.IndexOf('TECHNICAL DETAILS')) -gt $report.IndexOf('RECOMMENDED ACTIONS')) 'technical details follow the readable recommendations'
 
     Initialize-Report
